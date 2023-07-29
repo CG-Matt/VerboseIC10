@@ -40,8 +40,6 @@ class ParserGlobals
     ConditionalInfo generate_conditional_labels();
     void register_label(std::string label);
     void register_label(std::vector<std::string> label);
-
-    // operator std::string() const;
 };
 
 struct ParserFlags

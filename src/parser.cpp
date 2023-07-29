@@ -1,8 +1,6 @@
-#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <string>
-#include <sstream>
 #include "commands.h"
 #include "parser.h"
 #include "constants.h"
@@ -141,8 +139,6 @@ void Parser::p_parse_file(std::vector<std::string> file_contents)
         return line;
     });
 
-    // std::cout << raw_directives[0].m_arguments[0] << std::endl;
-
     // Convert to raw commands
     std::transform(command_lines.begin(), command_lines.end(), std::back_inserter(raw_commands), [](const std::vector<std::string> line)
     {
@@ -194,7 +190,6 @@ void Parser::parse()
 
     std::copy_if(raw_output.begin(), raw_output.end(), std::back_inserter(this->output), [](std::string line)
     {
-        // std::cout << line << " " << line.size() << std::endl;
         return line.size() > 0;
     });
 }
