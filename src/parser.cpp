@@ -8,18 +8,18 @@
 
 static const short version = 4;
 
-PReference::PReference(std::string internal, std::string external)
+PReference::PReference(const std::string& internal, const std::string& external)
 {
     m_internal = internal;
     m_external = external;
 }
 
-void ParserReferences::add(std::string external_name, std::string internal_name)
+void ParserReferences::add(const std::string& external_name, const std::string& internal_name)
 {
     PReference ref(internal_name, external_name);
     m_definitions.push_back(ref);
 }
-std::string ParserReferences::get(std::string external_name) const
+std::string ParserReferences::get(const std::string& external_name) const
 {
     auto res = std::find_if(m_definitions.begin(), m_definitions.end(), [&external_name](const PReference ref)
     {
@@ -31,7 +31,7 @@ std::string ParserReferences::get(std::string external_name) const
     }
     return "";
 }
-std::string ParserReferences::get_ext(std::string internal_name) const
+std::string ParserReferences::get_ext(const std::string& internal_name) const
 {
     auto res = std::find_if(m_definitions.begin(), m_definitions.end(), [&internal_name](const PReference ref)
     {
@@ -73,11 +73,11 @@ ConditionalInfo ParserGlobals::generate_conditional_labels()
 
     return conditional;
 }
-void ParserGlobals::register_label(std::string label)
+void ParserGlobals::register_label(const std::string& label)
 {
     labels.push_back(label);
 }
-void ParserGlobals::register_label(std::vector<std::string> label)
+void ParserGlobals::register_label(const std::vector<std::string>& label)
 {
     int size = label.size();
     for(unsigned int i = 0; i < size; i++)
@@ -106,50 +106,32 @@ void Parser::p_parse_file(std::vector<std::string> file_contents)
     std::vector<std::string> raw_directive_lines;
     std::vector<std::string> raw_command_lines;
 
-    std::copy_if(file_contents.begin(), file_contents.end(), std::back_inserter(raw_directive_lines), [](std::string line)
+    for(auto line : file_contents)
     {
-        return line.rfind("#", 0) == 0; // Starts with '#'
-    });
-    std::copy_if(file_contents.begin(), file_contents.end(), std::back_inserter(raw_command_lines), [](std::string line)
-    {
-        return line.rfind("#", 0) != 0 && line.rfind("$", 0) != 0;
-    });
+        if(line.rfind("$", 0) == 0) // Starts with '$'
+        {
+            continue;
+        }
+        if(line.rfind("#", 0) == 0) // Starts with '#'
+        {
+            raw_directive_lines.push_back(line);
+            continue;
+        }
 
-    std::vector<std::vector<std::string>> directive_lines;
-    std::vector<std::vector<std::string>> command_lines;
+        raw_command_lines.push_back(line);
+    }
 
     // Array of directive lines
-    std::transform(raw_directive_lines.begin(), raw_directive_lines.end(), std::back_inserter(directive_lines), [](const std::string line)
+    std::transform(raw_directive_lines.begin(), raw_directive_lines.end(), std::back_inserter(m_directives), [](const std::string line)
     {
-        return split_string(line, ' ');
+        return RawDirective(split_string(line, ' '));
     });
     // Array of command lines
-    std::transform(raw_command_lines.begin(), raw_command_lines.end(), std::back_inserter(command_lines), [](const std::string line)
+    std::transform(raw_command_lines.begin(), raw_command_lines.end(), std::back_inserter(m_input), [](const std::string line)
     {
-        return split_string(line, ' ');
+        return RawCommand(split_string(line, ' '));
     });
 
-    std::vector<RawDirective> raw_directives;
-    std::vector<RawCommand> raw_commands;
-
-    // Convert to raw directives
-    std::transform(directive_lines.begin(), directive_lines.end(), std::back_inserter(raw_directives), [](const std::vector<std::string> line)
-    {
-        RawDirective pdirective(line);
-        return line;
-    });
-
-    // Convert to raw commands
-    std::transform(command_lines.begin(), command_lines.end(), std::back_inserter(raw_commands), [](const std::vector<std::string> line)
-    {
-        RawCommand pcommand(line);
-        return line;
-    });
-
-    // Set m_directives to raw_directives
-    m_directives = raw_directives;
-    // Set m_input to raw_commands
-    m_input = raw_commands;
 }
 void Parser::p_parse_directives()
 {
@@ -177,15 +159,14 @@ void Parser::parse()
     if(flags.version != version){ return; }
 
     std::vector<std::string> raw_output;
-    ParserGlobals& parse_globals = this->globals;
-    ParserFlags& parse_flags = this->flags;
 
-    std::transform(m_input.begin(), m_input.end(), std::back_inserter(raw_output), [&parse_globals, &parse_flags](RawCommand& rcmd)
+    // Calling each command in the file and saving the results to a temporary buffer
+    std::transform(m_input.begin(), m_input.end(), std::back_inserter(raw_output), [this](RawCommand& rcmd)
     {
         if(rcmd.m_command.size() < 1){ return (std::string)""; }
         if(commands_map.find(rcmd.m_command) == commands_map.end()){ return "ERROR: Command \"" + rcmd.m_command + "\" is not a valid command"; }
         auto &cmd = commands_map.at(rcmd.m_command);
-        return cmd(rcmd.m_arguements, parse_globals, parse_flags);
+        return cmd(rcmd.m_arguements, this->globals, this->flags);
     });
 
     std::copy_if(raw_output.begin(), raw_output.end(), std::back_inserter(this->output), [](std::string line)

@@ -11,7 +11,7 @@ class PReference
         std::string m_internal;
         std::string m_external;
 
-    PReference(std::string internal, std::string external);
+    PReference(const std::string& internal, const std::string& external);
 };
 
 class ParserReferences
@@ -23,9 +23,9 @@ class ParserReferences
         std::vector<std::string> m_valid;
         std::vector<PReference> m_definitions;
 
-    void add(std::string external_name, std::string internal_name);
-    std::string get(std::string external_name) const;
-    std::string get_ext(std::string internal_name) const;
+    void add(const std::string& external_name, const std::string& internal_name);
+    std::string get(const std::string& external_name) const;
+    std::string get_ext(const std::string& internal_name) const;
     std::string get_free() const;
 };
 
@@ -38,8 +38,8 @@ class ParserGlobals
         ConditionalInfo conditional;
 
     ConditionalInfo generate_conditional_labels();
-    void register_label(std::string label);
-    void register_label(std::vector<std::string> label);
+    void register_label(const std::string& label);
+    void register_label(const std::vector<std::string>& label);
 };
 
 struct ParserFlags
