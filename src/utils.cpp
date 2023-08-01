@@ -20,7 +20,8 @@ std::vector<std::string> split_string(std::string str, char delim)
     return out;
 }
 
-/*Removes and return the first element of the "data" vector*/
+/*Removes and returns the first element of the "data" vector.
+Returns empty string if it reaches the end of the vector*/
 std::string shift(std::vector<std::string>& data)
 {
     if(data.size() < 1){ return ""; }
