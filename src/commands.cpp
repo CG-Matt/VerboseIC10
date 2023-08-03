@@ -6,46 +6,47 @@
 #include "instructions.h"
 #include "commands.h"
 #include "utils.h"
+#include "data_structs.h"
 
 namespace c_commands
 {
-    std::string dev(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string dev(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
-        std::string selector = shift(args);
-        shift(args); // Discard next token
-        
         if(flags.devices_initialised == true){ return "ERROR: Devices have already been initialised"; }
+        if(flags.available_devices <= 0){ return "ERROR: Max device limit reached"; }
+        
+        std::string selector = args.shift();
+        args.shift();
 
         if(includes(globals.references.m_valid_devices, selector))
         {
-            std::string name = shift(args);
+            std::string name = args.shift();
             globals.references.add(name, selector);
+            flags.available_devices--;
             return "";
         }
 
         if(selector == "*")
         {
             flags.devices_initialised = true;
-            std::vector<std::string> arr = parse_array(args);
+            vmc::string_array arr(parse_array(args));
+            if(arr.size() > 6){ return "ERROR: Too many devices listed. (" + std::to_string(arr.size()) + "/6)"; }
             for(int i = 0; i < arr.size(); i++)
             {
-                std::string cur_tok = arr[i];
-
-                globals.references.add(cur_tok, globals.references.m_available_devices[i]);
-                // flags.avaiable_registers--; // Bug? Maybe should be available_devices???
+                globals.references.add(arr[i], globals.references.m_available_devices[i]);
             }
             return "";
         }
 
         return "ERROR: Device assignment error";
     }
-    std::string reg(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string reg(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
-        if(args.size() < 1){ return "ERROR: Register names not provided"; }
+        if(!args.contains_data()){ return "ERROR: Register names not provided"; }
         std::string& first = args[0];
-        if(first.rfind("[", 0) == 0)
+        if(starts_with(first, "["))
         {
-            std::vector<std::string> arr = parse_array(args);
+            vmc::string_array arr = parse_array(args);
             for(auto &entry : arr)
             {
                 globals.references.add(entry, globals.references.get_free());
@@ -58,36 +59,37 @@ namespace c_commands
 
         return "";
     }
-    std::string set(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string set(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
-        std::string reg = shift(args);
-        shift(args); // Discard next token
-        std::string value = shift(args);
+        std::string reg = args.shift();
+        args.shift(); // Discard next token
+        std::string value = args.shift();
 
         reg = globals.references.get(reg);
         value = parse_value(value, globals);
 
         return ins::move(reg, value);
     }
-    std::string label(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string label(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
-        std::string name = shift(args);
+        std::string name = args.shift();
+        if(name.size() < 1){ return "ERROR: Label name required"; }
         globals.register_label(name);
 
         return ins::label(name);
     }
-    std::string eport(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string eport(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
-        std::string target = shift(args);
-        shift(args); // Discard next token
-        std::string value = shift(args);
+        std::string target = args.shift();
+        args.shift(); // Discard next token
+        std::string value = args.shift();
         auto dv_arr = split_string(target, '.');
-        std::string& device = dv_arr[0];
-        std::string& variable = dv_arr[1];
+        std::string device = dv_arr[0];
+        std::string variable = dv_arr[1];
 
         value = parse_value(value, globals);
 
-        if(device.rfind("*", 0) == 0)
+        if(starts_with(device, "*"))
         {
             device.erase(device.begin());
             device = globals.references.get(device);
@@ -99,36 +101,33 @@ namespace c_commands
 
         return ins::s(device, variable, value);
     }
-    std::string wait(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string wait(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
-        if(args.size() < 1){ return ins::yld(); } // Technically not needed because of shift
-
-        std::string time = shift(args);
-
-        if(time.rfind("#", 0) == 0){ return ins::yld(); }
-
-        return ins::sleep(time);
+        if(!args.contains_data()){ return ins::yld(); }
+        // The first argument is the time to sleep
+        return ins::sleep(args[0]);
     }
-    std::string move(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string move(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
-        std::string lines = shift(args);
-        std::string condition = shift(args);
-        std::string reg = shift(args);
-        std::string compare = shift(args);
-        std::string value = shift(args);
+        std::string lines = args.shift();
+        std::string condition = args.shift();
 
         if(condition.size() < 1){ return ins::jr(lines); }
+
+        std::string reg = args.shift();
+        std::string compare = args.shift();
+        std::string value = args.shift();
 
         reg = globals.references.get(reg);
         return BR_compare(compare, reg, value, lines);
     }
-    std::string math(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string math(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
-        std::string reg = shift(args);
-        shift(args); // Discard next token
-        std::string var1 = shift(args);
-        std::string op = shift(args);
-        std::string var2 = shift(args);
+        std::string reg = args.shift();
+        args.shift(); // Discard next token
+        std::string var1 = args.shift();
+        std::string op = args.shift();
+        std::string var2 = args.shift();
 
         reg = globals.references.get(reg);
         var1 = parse_value(var1, globals);
@@ -138,18 +137,18 @@ namespace c_commands
 
         return ins::math(op, reg, var1, var2);
     }
-    std::string jump(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string jump(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
-        shift(args); // Discard first token
-        std::string label = shift(args);
+        args.v_shift(); // Discard first token
+        std::string& label = args.v_shift();
 
         return ins::j(label);
     }
-    std::string import(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string import(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
-        std::string reg = shift(args);
-        shift(args); // Discard next token
-        std::string target = shift(args);
+        std::string reg = args.shift();
+        args.shift(); // Discard next token
+        std::string target = args.shift();
         auto dv_arr = split_string(target, '.');
         std::string& device = dv_arr[0];
         std::string& variable = dv_arr[1];
@@ -159,29 +158,30 @@ namespace c_commands
 
         return ins::l(reg, device, variable);
     }
-    std::string branch(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string branch(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
-        shift(args); // Discard first token
-        std::string label = shift(args);
-        std::string condition = shift(args);
-        std::string var1 = shift(args);
-        std::string compare = shift(args);
-        std::string var2 = shift(args);
+        args.shift(); // Discard first token
+        std::string label = args.shift();
+        std::string condition = args.shift();
 
         if(condition.size() < 1){ return ""; }
+
+        std::string var1 = args.shift();
+        std::string compare = args.shift();
+        std::string var2 = args.shift();
 
         var1 = parse_value(var1, globals);
         var2 = parse_value(var2, globals);
 
         return B_compare(compare, var1, var2, label);
     }
-    std::string trans(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string trans(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
         if(!flags.using_carry){ return "You must specify the use of carry to use the trans command (#using carry)"; }
 
-        std::string source = shift(args);
-        shift(args);
-        std::string destination = shift(args);
+        std::string source = args.shift();
+        args.shift();
+        std::string destination = args.shift();
         auto sdv_arr = split_string(source, '.');
         std::string& s_device = sdv_arr[0];
         std::string& s_variable = sdv_arr[1];
@@ -191,7 +191,7 @@ namespace c_commands
 
         std::string eport;
 
-        if(d_device.rfind("*", 0) == 0)
+        if(starts_with(d_device, "*"))
         {
             d_device.erase(d_device.begin());
             eport = ins::sb(globals.references.get(d_device), d_variable, globals.references.get("carry"));
@@ -205,7 +205,7 @@ namespace c_commands
 
         return eport2 + "\n" + eport;
     }
-    std::string p_if(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string p_if(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
         List list;
 
@@ -216,29 +216,35 @@ namespace c_commands
         std::string comparator;
         std::string value;
 
-        while(args.size() > 0)
+        while(args.contains_data())
         {
-            reg = shift(args);
-            comparator = shift(args);
-            value = shift(args);
-            if(reg.size() < 1){ break; }
-            if(comparator.size() < 1){ break; }
-            if(value.size() < 1){ break; }
+            reg = args.shift();
+            comparator = args.shift();
+            value = args.shift();
+            if(reg.size() < 1 || comparator.size() < 1 || value.size() < 1){ break; }
 
             reg = globals.references.get(reg);
             value = parse_value(value, globals);
+            if(invert_comparator.find(comparator) == invert_comparator.end())
+            {
+                return "ERROR: Unexpected comparator symbol \"" + comparator + "\"";
+            }
             comparator = invert_comparator.at(comparator);
             list.add(B_compare(comparator, reg, value, fail_label));
-            if(args.size() > 0)
+            if(args.contains_data())
             {
-                if(includes(combinators, args[0])){ shift(args); }
+                if(includes(combinators, args[0])){ args.shift(); }
             }
         }
 
+        flags.in_conditional = true;
+
         return list.concat();
     }
-    std::string p_else(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string p_else(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
+        if(!flags.in_conditional){ return "ERROR: Conditional not initialised correctly"; }
+
         List list;
         flags.is_conditional_else = true;
 
@@ -247,8 +253,10 @@ namespace c_commands
 
         return list.concat();
     }
-    std::string end(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)
+    std::string end(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)
     {
+        if(!flags.in_conditional){ return "ERROR: Conditional not initialised correctly"; }
+
         if(flags.is_conditional_else == false){ return ins::label(globals.conditional.fail_label); }
 
         flags.is_conditional_else = false;
@@ -256,7 +264,7 @@ namespace c_commands
     }
 };
 
-std::unordered_map<std::string, std::function<std::string(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)>> commands_map =
+std::unordered_map<std::string, cmd_func> commands_map =
 {
     { "dev", c_commands::dev },
     { "reg", c_commands::reg },

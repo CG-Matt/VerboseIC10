@@ -1,6 +1,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include "data_structs.h"
 #include "commands.h"
 #include "parser.h"
 #include "constants.h"
@@ -148,7 +149,7 @@ void Parser::p_parse_directives()
             if(feature == "carry")
             {
                 globals.references.add("carry", "r15");
-                flags.avaiable_registers--;
+                flags.available_registers--;
                 flags.using_carry = true;
             }
         }
@@ -166,7 +167,8 @@ void Parser::parse()
         if(rcmd.m_command.size() < 1){ return (std::string)""; }
         if(commands_map.find(rcmd.m_command) == commands_map.end()){ return "ERROR: Command \"" + rcmd.m_command + "\" is not a valid command"; }
         auto &cmd = commands_map.at(rcmd.m_command);
-        return cmd(rcmd.m_arguements, this->globals, this->flags);
+        vmc::string_array args(rcmd.m_arguements);
+        return cmd(args, this->globals, this->flags);
     });
 
     std::copy_if(raw_output.begin(), raw_output.end(), std::back_inserter(this->output), [](std::string line)

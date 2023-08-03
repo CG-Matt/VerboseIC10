@@ -4,25 +4,28 @@
 #include <vector>
 #include <unordered_map>
 #include <functional>
+#include "data_structs.h"
 #include "parser.h"
+
+typedef std::function<std::string(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags)> cmd_func;
 
 namespace c_commands
 {
-    std::string dev(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
-    std::string reg(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
-    std::string set(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
-    std::string label(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
-    std::string eport(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
-    std::string wait(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
-    std::string move(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
-    std::string math(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
-    std::string jump(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
-    std::string import(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
-    std::string branch(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
-    std::string trans(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
-    std::string p_if(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
-    std::string p_else(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
-    std::string end(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string dev(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string reg(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string set(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string label(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string eport(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string wait(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string move(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string math(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string jump(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string import(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string branch(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string trans(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string p_if(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string p_else(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
+    std::string end(vmc::string_array& args, ParserGlobals& globals, ParserFlags& flags);
 };
 
-extern std::unordered_map<std::string, std::function<std::string(std::vector<std::string>& args, ParserGlobals& globals, ParserFlags& flags)>> commands_map;
+extern std::unordered_map<std::string, cmd_func> commands_map;
