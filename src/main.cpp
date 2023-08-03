@@ -50,7 +50,6 @@ int main(int argc, char **argv)
         for(auto &line : parser.output)
         {
             std::cout << "   - " + line << std::endl;
-            // std::cout << line << std::endl;
         }
     }
     
