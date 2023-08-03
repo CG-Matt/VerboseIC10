@@ -48,7 +48,8 @@ struct ParserFlags
     bool devices_initialised = false;
     bool in_conditional = false;
     bool is_conditional_else = false;
-    short avaiable_registers = 16;
+    short available_registers = 16;
+    short available_devices = 6;
     short version;
 };
 
