@@ -6,7 +6,7 @@
 #include "instructions.h"
 
 /*Splits the string "str" at every "delim" char*/
-std::vector<std::string> split_string(std::string str, char delim)
+std::vector<std::string> split_string(const std::string& str, char delim)
 {
     std::stringstream line_stream(str);
     std::string segment;
@@ -109,6 +109,11 @@ std::string parse_value(const std::string& variable, const ParserGlobals& global
     if(is_boolean(variable)){ return parse_boolean(variable); }
     if(is_reference(variable)){ return globals.references.get(variable); }
     return variable;
+}
+
+bool starts_with(const std::string& data, const std::string& segment)
+{
+    return data.rfind(segment, 0) == 0;
 }
 
 std::string B_compare(const std::string& comparator, const std::string& reg, const std::string& value, const std::string& label)
