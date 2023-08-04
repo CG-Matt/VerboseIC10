@@ -143,6 +143,8 @@ namespace c_commands
         args.v_shift(); // Discard first token
         std::string& label = args.v_shift();
 
+        if(!parser->globals.label_exists(label)){ parser->errors.add_end(vmc::GenericError(idx, "Unregistered label \"" + label + "\" called")); return ""; }
+
         return ins::j(label);
     }
     std::string import(vmc::string_array& args, const uint16_t& idx, Parser* parser)

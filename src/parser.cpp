@@ -85,6 +85,10 @@ void ParserGlobals::register_label(const std::vector<std::string>& labels)
         this->labels.push_back(label);
     }
 }
+bool ParserGlobals::label_exists(const std::string& label)
+{
+    return includes(labels, label);
+}
 
 
 
@@ -124,9 +128,14 @@ void Parser::p_parse_directives()
         std::string& cur_directive = rdirective.m_directive;
         std::vector<std::string>& args = rdirective.m_arguments;
 
-        if(cur_directive == "version"){ flags.version = std::stoi(args[0]); }
+        if(cur_directive == "version")
+        {
+            if(args.size() < 1){ errors.add_end(vmc::GenericError(rdirective.line_idx, "No version number provided")); continue; }
+            flags.version = std::stoi(args[0]);
+        }
         if(cur_directive == "using")
         {
+            if(args.size() < 1){ errors.add_end(vmc::GenericError(rdirective.line_idx, "No module name provided")); continue; }
             std::string &feature = args[0];
 
             if(feature == "carry")
