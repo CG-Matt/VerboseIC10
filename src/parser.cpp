@@ -152,7 +152,7 @@ void Parser::parse()
         if(commands_map.find(rcmd.m_command) == commands_map.end()){ this->errors.add_end(vmc::GenericError(rcmd.line_idx, "Command \"" + rcmd.m_command + "\" is not a valid command")); continue; }
         auto &cmd = commands_map.at(rcmd.m_command);
         vmc::string_array args(rcmd.m_arguements);
-        raw_output.push_back(cmd(args, rcmd.line_idx, this->globals, this->flags, this->errors));
+        raw_output.push_back(cmd(args, rcmd.line_idx, this));
     }
     
     if(this->errors.size() > 0){ return; }

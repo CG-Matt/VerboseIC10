@@ -10,76 +10,76 @@
 
 namespace c_commands
 {
-    std::string dev(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string dev(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        if(flags.devices_initialised == true){ errors.add_end(vmc::GenericError(idx, "Devices have already been initialised")); return ""; }
-        if(flags.available_devices <= 0){ errors.add_end(vmc::GenericError(idx, "Max device limit reached")); return ""; }
+        if(parser->flags.devices_initialised == true){ parser->errors.add_end(vmc::GenericError(idx, "Devices have already been initialised")); return ""; }
+        if(parser->flags.available_devices <= 0){ parser->errors.add_end(vmc::GenericError(idx, "Max device limit reached")); return ""; }
         
         std::string selector = args.shift();
         args.shift();
 
-        if(includes(globals.references.m_valid_devices, selector))
+        if(includes(parser->globals.references.m_valid_devices, selector))
         {
             std::string name = args.shift();
-            globals.references.add(name, selector);
-            flags.available_devices--;
+            parser->globals.references.add(name, selector);
+            parser->flags.available_devices--;
             return "";
         }
 
         if(selector == "*")
         {
-            flags.devices_initialised = true;
+            parser->flags.devices_initialised = true;
             vmc::string_array arr(parse_array(args));
-            if(arr.size() > 6){ errors.add_end(vmc::GenericError(idx, "Too many devices listed. (" + std::to_string(arr.size()) + "/6)")); return ""; }
+            if(arr.size() > 6){ parser->errors.add_end(vmc::GenericError(idx, "Too many devices listed. (" + std::to_string(arr.size()) + "/6)")); return ""; }
             for(int i = 0; i < arr.size(); i++)
             {
-                globals.references.add(arr[i], globals.references.m_available_devices[i]);
+                parser->globals.references.add(arr[i], parser->globals.references.m_available_devices[i]);
             }
             return "";
         }
 
-        errors.add_end(vmc::GenericError(idx, "Device assignment error"));
+        parser->errors.add_end(vmc::GenericError(idx, "Device assignment error"));
         return "";
     }
-    std::string reg(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string reg(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        if(!args.contains_data()){ errors.add_end(vmc::GenericError(idx, "Register names not provided")); return ""; }
+        if(!args.contains_data()){ parser->errors.add_end(vmc::GenericError(idx, "Register names not provided")); return ""; }
         std::string& first = args[0];
         if(starts_with(first, "["))
         {
             vmc::string_array arr = parse_array(args);
             for(auto &entry : arr)
             {
-                globals.references.add(entry, globals.references.get_free());
+                parser->globals.references.add(entry, parser->globals.references.get_free());
             }
             return "";
         }
 
-        std::string reg = globals.references.get_free();
-        globals.references.add(first, reg);
+        std::string reg = parser->globals.references.get_free();
+        parser->globals.references.add(first, reg);
 
         return "";
     }
-    std::string set(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string set(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         std::string reg = args.shift();
         args.shift(); // Discard next token
         std::string value = args.shift();
 
-        reg = globals.references.get(reg);
-        value = parse_value(value, globals);
+        reg = parser->globals.references.get(reg);
+        value = parse_value(value, parser->globals);
 
         return ins::move(reg, value);
     }
-    std::string label(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string label(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         std::string name = args.shift();
-        if(name.size() < 1){ errors.add_end(vmc::GenericError(idx, "Label name required")); return ""; }
-        globals.register_label(name);
+        if(name.size() < 1){ parser->errors.add_end(vmc::GenericError(idx, "Label name required")); return ""; }
+        parser->globals.register_label(name);
 
         return ins::label(name);
     }
-    std::string eport(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string eport(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         std::string target = args.shift();
         args.shift(); // Discard next token
@@ -88,27 +88,27 @@ namespace c_commands
         std::string device = dv_arr[0];
         std::string variable = dv_arr[1];
 
-        value = parse_value(value, globals);
+        value = parse_value(value, parser->globals);
 
         if(starts_with(device, "*"))
         {
             device.erase(device.begin());
-            device = globals.references.get(device);
+            device = parser->globals.references.get(device);
 
             return ins::sb(device, variable, value);
         }
 
-        device = globals.references.get(device);
+        device = parser->globals.references.get(device);
 
         return ins::s(device, variable, value);
     }
-    std::string wait(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string wait(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         if(!args.contains_data()){ return ins::yld(); }
         // The first argument is the time to sleep
         return ins::sleep(args[0]);
     }
-    std::string move(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string move(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         std::string lines = args.shift();
         std::string condition = args.shift();
@@ -119,10 +119,10 @@ namespace c_commands
         std::string compare = args.shift();
         std::string value = args.shift();
 
-        reg = globals.references.get(reg);
+        reg = parser->globals.references.get(reg);
         return BR_compare(compare, reg, value, lines);
     }
-    std::string math(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string math(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         std::string reg = args.shift();
         args.shift(); // Discard next token
@@ -130,22 +130,22 @@ namespace c_commands
         std::string op = args.shift();
         std::string var2 = args.shift();
 
-        reg = globals.references.get(reg);
-        var1 = parse_value(var1, globals);
-        var2 = parse_value(var2, globals);
+        reg = parser->globals.references.get(reg);
+        var1 = parse_value(var1, parser->globals);
+        var2 = parse_value(var2, parser->globals);
 
         op = operations.at(op);
 
         return ins::math(op, reg, var1, var2);
     }
-    std::string jump(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string jump(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         args.v_shift(); // Discard first token
         std::string& label = args.v_shift();
 
         return ins::j(label);
     }
-    std::string import(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string import(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         std::string reg = args.shift();
         args.shift(); // Discard next token
@@ -154,12 +154,12 @@ namespace c_commands
         std::string& device = dv_arr[0];
         std::string& variable = dv_arr[1];
 
-        reg = globals.references.get(reg);
-        device = globals.references.get(device);
+        reg = parser->globals.references.get(reg);
+        device = parser->globals.references.get(device);
 
         return ins::l(reg, device, variable);
     }
-    std::string branch(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string branch(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         args.shift(); // Discard first token
         std::string label = args.shift();
@@ -171,14 +171,14 @@ namespace c_commands
         std::string compare = args.shift();
         std::string var2 = args.shift();
 
-        var1 = parse_value(var1, globals);
-        var2 = parse_value(var2, globals);
+        var1 = parse_value(var1, parser->globals);
+        var2 = parse_value(var2, parser->globals);
 
         return B_compare(compare, var1, var2, label);
     }
-    std::string trans(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string trans(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        if(!flags.using_carry){ return "You must specify the use of carry to use the trans command (#using carry)"; }
+        if(!parser->flags.using_carry){ return "You must specify the use of carry to use the trans command (#using carry)"; }
 
         std::string source = args.shift();
         args.shift();
@@ -195,22 +195,22 @@ namespace c_commands
         if(starts_with(d_device, "*"))
         {
             d_device.erase(d_device.begin());
-            eport = ins::sb(globals.references.get(d_device), d_variable, globals.references.get("carry"));
+            eport = ins::sb(parser->globals.references.get(d_device), d_variable, parser->globals.references.get("carry"));
         }
         else
         {
-            eport = ins::s(globals.references.get(d_device), d_variable, globals.references.get("carry"));
+            eport = ins::s(parser->globals.references.get(d_device), d_variable, parser->globals.references.get("carry"));
         }
 
-        std::string eport2 = ins::l(globals.references.get("carry"), globals.references.get(s_device), s_variable);
+        std::string eport2 = ins::l(parser->globals.references.get("carry"), parser->globals.references.get(s_device), s_variable);
 
         return eport2 + "\n" + eport;
     }
-    std::string p_if(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string p_if(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         List list;
 
-        auto labels = globals.generate_conditional_labels();
+        auto labels = parser->globals.generate_conditional_labels();
         const std::string& fail_label = labels.fail_label;
 
         std::string reg;
@@ -224,11 +224,11 @@ namespace c_commands
             value = args.shift();
             if(reg.size() < 1 || comparator.size() < 1 || value.size() < 1){ break; }
 
-            reg = globals.references.get(reg);
-            value = parse_value(value, globals);
+            reg = parser->globals.references.get(reg);
+            value = parse_value(value, parser->globals);
             if(invert_comparator.find(comparator) == invert_comparator.end())
             {
-                errors.add_end(vmc::GenericError(idx, "Unexpected comparator symbol \"" + comparator + "\""));
+                parser->errors.add_end(vmc::GenericError(idx, "Unexpected comparator symbol \"" + comparator + "\""));
                 return "";
             }
             comparator = invert_comparator.at(comparator);
@@ -239,30 +239,30 @@ namespace c_commands
             }
         }
 
-        flags.in_conditional = true;
+        parser->flags.in_conditional = true;
 
         return list.concat();
     }
-    std::string p_else(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string p_else(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        if(!flags.in_conditional){ errors.add_end(vmc::GenericError(idx, "Conditional not initialised correctly")); return ""; }
+        if(!parser->flags.in_conditional){ parser->errors.add_end(vmc::GenericError(idx, "Conditional not initialised correctly")); return ""; }
 
         List list;
-        flags.is_conditional_else = true;
+        parser->flags.is_conditional_else = true;
 
-        list.add(ins::j(globals.conditional.end_label));
-        list.add(ins::label(globals.conditional.fail_label));
+        list.add(ins::j(parser->globals.conditional.end_label));
+        list.add(ins::label(parser->globals.conditional.fail_label));
 
         return list.concat();
     }
-    std::string end(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
+    std::string end(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        if(!flags.in_conditional){ errors.add_end(vmc::GenericError(idx, "Conditional not initialised correctly")); return ""; }
+        if(!parser->flags.in_conditional){ parser->errors.add_end(vmc::GenericError(idx, "Conditional not initialised correctly")); return ""; }
 
-        if(flags.is_conditional_else == false){ return ins::label(globals.conditional.fail_label); }
+        if(parser->flags.is_conditional_else == false){ return ins::label(parser->globals.conditional.fail_label); }
 
-        flags.is_conditional_else = false;
-        return ins::label(globals.conditional.end_label);
+        parser->flags.is_conditional_else = false;
+        return ins::label(parser->globals.conditional.end_label);
     }
 };
 
