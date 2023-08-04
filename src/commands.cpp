@@ -10,10 +10,10 @@
 
 namespace c_commands
 {
-    std::string dev(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string dev(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
-        if(flags.devices_initialised == true){ return vmc::GenericError(idx, "Devices have already been initialised"); }
-        if(flags.available_devices <= 0){ return vmc::GenericError(idx, "Max device limit reached"); }
+        if(flags.devices_initialised == true){ errors.add_end(vmc::GenericError(idx, "Devices have already been initialised")); return ""; }
+        if(flags.available_devices <= 0){ errors.add_end(vmc::GenericError(idx, "Max device limit reached")); return ""; }
         
         std::string selector = args.shift();
         args.shift();
@@ -30,7 +30,7 @@ namespace c_commands
         {
             flags.devices_initialised = true;
             vmc::string_array arr(parse_array(args));
-            if(arr.size() > 6){ return vmc::GenericError(idx, "Too many devices listed. (" + std::to_string(arr.size()) + "/6)"); }
+            if(arr.size() > 6){ errors.add_end(vmc::GenericError(idx, "Too many devices listed. (" + std::to_string(arr.size()) + "/6)")); return ""; }
             for(int i = 0; i < arr.size(); i++)
             {
                 globals.references.add(arr[i], globals.references.m_available_devices[i]);
@@ -38,11 +38,12 @@ namespace c_commands
             return "";
         }
 
-        return vmc::GenericError(idx, "Device assignment error");
+        errors.add_end(vmc::GenericError(idx, "Device assignment error"));
+        return "";
     }
-    std::string reg(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string reg(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
-        if(!args.contains_data()){ return vmc::GenericError(idx, "Register names not provided"); }
+        if(!args.contains_data()){ errors.add_end(vmc::GenericError(idx, "Register names not provided")); return ""; }
         std::string& first = args[0];
         if(starts_with(first, "["))
         {
@@ -59,7 +60,7 @@ namespace c_commands
 
         return "";
     }
-    std::string set(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string set(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
         std::string reg = args.shift();
         args.shift(); // Discard next token
@@ -70,15 +71,15 @@ namespace c_commands
 
         return ins::move(reg, value);
     }
-    std::string label(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string label(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
         std::string name = args.shift();
-        if(name.size() < 1){ return vmc::GenericError(idx, "Label name required"); }
+        if(name.size() < 1){ errors.add_end(vmc::GenericError(idx, "Label name required")); return ""; }
         globals.register_label(name);
 
         return ins::label(name);
     }
-    std::string eport(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string eport(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
         std::string target = args.shift();
         args.shift(); // Discard next token
@@ -101,13 +102,13 @@ namespace c_commands
 
         return ins::s(device, variable, value);
     }
-    std::string wait(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string wait(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
         if(!args.contains_data()){ return ins::yld(); }
         // The first argument is the time to sleep
         return ins::sleep(args[0]);
     }
-    std::string move(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string move(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
         std::string lines = args.shift();
         std::string condition = args.shift();
@@ -121,7 +122,7 @@ namespace c_commands
         reg = globals.references.get(reg);
         return BR_compare(compare, reg, value, lines);
     }
-    std::string math(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string math(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
         std::string reg = args.shift();
         args.shift(); // Discard next token
@@ -137,14 +138,14 @@ namespace c_commands
 
         return ins::math(op, reg, var1, var2);
     }
-    std::string jump(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string jump(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
         args.v_shift(); // Discard first token
         std::string& label = args.v_shift();
 
         return ins::j(label);
     }
-    std::string import(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string import(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
         std::string reg = args.shift();
         args.shift(); // Discard next token
@@ -158,7 +159,7 @@ namespace c_commands
 
         return ins::l(reg, device, variable);
     }
-    std::string branch(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string branch(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
         args.shift(); // Discard first token
         std::string label = args.shift();
@@ -175,7 +176,7 @@ namespace c_commands
 
         return B_compare(compare, var1, var2, label);
     }
-    std::string trans(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string trans(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
         if(!flags.using_carry){ return "You must specify the use of carry to use the trans command (#using carry)"; }
 
@@ -205,7 +206,7 @@ namespace c_commands
 
         return eport2 + "\n" + eport;
     }
-    std::string p_if(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string p_if(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
         List list;
 
@@ -227,7 +228,8 @@ namespace c_commands
             value = parse_value(value, globals);
             if(invert_comparator.find(comparator) == invert_comparator.end())
             {
-                return vmc::GenericError(idx, "Unexpected comparator symbol \"" + comparator + "\"");
+                errors.add_end(vmc::GenericError(idx, "Unexpected comparator symbol \"" + comparator + "\""));
+                return "";
             }
             comparator = invert_comparator.at(comparator);
             list.add(B_compare(comparator, reg, value, fail_label));
@@ -241,9 +243,9 @@ namespace c_commands
 
         return list.concat();
     }
-    std::string p_else(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string p_else(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
-        if(!flags.in_conditional){ return vmc::GenericError(idx, "Conditional not initialised correctly"); }
+        if(!flags.in_conditional){ errors.add_end(vmc::GenericError(idx, "Conditional not initialised correctly")); return ""; }
 
         List list;
         flags.is_conditional_else = true;
@@ -253,9 +255,9 @@ namespace c_commands
 
         return list.concat();
     }
-    std::string end(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags)
+    std::string end(vmc::string_array& args, uint16_t idx, ParserGlobals& globals, ParserFlags& flags, vmc::string_array& errors)
     {
-        if(!flags.in_conditional){ return vmc::GenericError(idx, "Conditional not initialised correctly"); }
+        if(!flags.in_conditional){ errors.add_end(vmc::GenericError(idx, "Conditional not initialised correctly")); return ""; }
 
         if(flags.is_conditional_else == false){ return ins::label(globals.conditional.fail_label); }
 
