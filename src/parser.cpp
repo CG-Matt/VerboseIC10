@@ -78,12 +78,11 @@ void ParserGlobals::register_label(const std::string& label)
 {
     labels.push_back(label);
 }
-void ParserGlobals::register_label(const std::vector<std::string>& label)
+void ParserGlobals::register_label(const std::vector<std::string>& labels)
 {
-    int size = label.size();
-    for(unsigned int i = 0; i < size; i++)
+    for(auto& label : labels)
     {
-        labels.push_back(label[i]);
+        this->labels.push_back(label);
     }
 }
 
@@ -104,35 +103,19 @@ void Parser::p_init_globals()
 }
 void Parser::p_parse_file(std::vector<std::string> file_contents)
 {
-    std::vector<std::string> raw_directive_lines;
-    std::vector<std::string> raw_command_lines;
-
-    for(auto line : file_contents)
+    for(unsigned int i = 0; i < file_contents.size(); i++)
     {
-        if(line.rfind("$", 0) == 0) // Starts with '$'
+        std::string& line = file_contents[i];
+
+        if(starts_with(line, "$")){ continue; } // Ignore Comments
+        if(starts_with(line, "#"))
         {
-            continue;
-        }
-        if(line.rfind("#", 0) == 0) // Starts with '#'
-        {
-            raw_directive_lines.push_back(line);
+            m_directives.push_back(RawDirective(split_string(line, ' '), i+1));
             continue;
         }
 
-        raw_command_lines.push_back(line);
+        m_input.push_back(RawCommand(split_string(line, ' '), i+1));
     }
-
-    // Array of directive lines
-    std::transform(raw_directive_lines.begin(), raw_directive_lines.end(), std::back_inserter(m_directives), [](const std::string line)
-    {
-        return RawDirective(split_string(line, ' '));
-    });
-    // Array of command lines
-    std::transform(raw_command_lines.begin(), raw_command_lines.end(), std::back_inserter(m_input), [](const std::string line)
-    {
-        return RawCommand(split_string(line, ' '));
-    });
-
 }
 void Parser::p_parse_directives()
 {
@@ -165,10 +148,10 @@ void Parser::parse()
     std::transform(m_input.begin(), m_input.end(), std::back_inserter(raw_output), [this](RawCommand& rcmd)
     {
         if(rcmd.m_command.size() < 1){ return (std::string)""; }
-        if(commands_map.find(rcmd.m_command) == commands_map.end()){ return "ERROR: Command \"" + rcmd.m_command + "\" is not a valid command"; }
+        if(commands_map.find(rcmd.m_command) == commands_map.end()){ return (std::string)vmc::GenericError(rcmd.line_idx, "Command \"" + rcmd.m_command + "\" is not a valid command"); }
         auto &cmd = commands_map.at(rcmd.m_command);
         vmc::string_array args(rcmd.m_arguements);
-        return cmd(args, this->globals, this->flags);
+        return cmd(args, rcmd.line_idx, this->globals, this->flags);
     });
 
     std::copy_if(raw_output.begin(), raw_output.end(), std::back_inserter(this->output), [](std::string line)
