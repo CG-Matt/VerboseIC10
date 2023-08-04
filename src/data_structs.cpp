@@ -62,4 +62,15 @@ namespace vmc
 
         return ss.str();
     }
+
+
+
+    GenericError::operator std::string() const
+    {
+        return m_data;
+    }
+    GenericError::GenericError(uint16_t line_index, std::string data)
+    {
+        m_data = "(" + std::to_string(line_index) + ") ERROR: " + data;
+    }
 }

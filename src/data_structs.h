@@ -34,4 +34,16 @@ namespace vmc
         std::string& v_shift();
         std::string join(std::string delim);
     };
+
+    class GenericError
+    {
+        private:
+            std::string m_data;
+
+        public:
+
+        operator std::string() const;
+
+        GenericError(uint16_t line_index, std::string data);
+    };
 }
