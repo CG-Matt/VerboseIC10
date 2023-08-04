@@ -63,6 +63,11 @@ namespace vmc
         return ss.str();
     }
 
+    void string_array::add_end(const std::string& data)
+    {
+        m_data.push_back(data);
+    }
+
 
 
     GenericError::operator std::string() const
