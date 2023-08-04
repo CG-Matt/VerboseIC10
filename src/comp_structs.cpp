@@ -4,8 +4,9 @@
 #include "comp_structs.h"
 #include "utils.h"
 
-RawDirective::RawDirective(std::vector<std::string> line)
+RawDirective::RawDirective(std::vector<std::string> line, uint16_t line_idx)
 {
+    this->line_idx = line_idx;
     // Check if line is empty first (causes seg fault if empty)
     if(line.size() < 1)
     {
@@ -25,8 +26,9 @@ RawDirective::RawDirective(std::vector<std::string> line)
 
 
 // Possibly filter command to not include empty lines
-RawCommand::RawCommand(std::vector<std::string> line)
+RawCommand::RawCommand(std::vector<std::string> line, uint16_t line_idx)
 {
+    this->line_idx = line_idx;
     // Check if line is empty first (causes seg fault if empty)
     if(line.size() < 1)
     {
