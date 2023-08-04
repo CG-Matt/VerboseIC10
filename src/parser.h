@@ -4,6 +4,7 @@
 #include <vector>
 #include "constants.h"
 #include "comp_structs.h"
+#include "data_structs.h"
 
 class PReference
 {
@@ -56,6 +57,7 @@ struct ParserFlags
 class Parser
 {
     public:
+        vmc::string_array errors;
         std::vector<std::string> output;
         ParserGlobals globals;
         ParserFlags flags;

@@ -121,8 +121,8 @@ void Parser::p_parse_directives()
 {
     for(auto &rdirective : m_directives)
     {
-        std::string &cur_directive = rdirective.m_directive;
-        std::vector<std::string> &args = rdirective.m_arguments;
+        std::string& cur_directive = rdirective.m_directive;
+        std::vector<std::string>& args = rdirective.m_arguments;
 
         if(cur_directive == "version"){ flags.version = std::stoi(args[0]); }
         if(cur_directive == "using")
@@ -145,14 +145,17 @@ void Parser::parse()
     std::vector<std::string> raw_output;
 
     // Calling each command in the file and saving the results to a temporary buffer
-    std::transform(m_input.begin(), m_input.end(), std::back_inserter(raw_output), [this](RawCommand& rcmd)
+    for( auto &rcmd : m_input)
     {
-        if(rcmd.m_command.size() < 1){ return (std::string)""; }
-        if(commands_map.find(rcmd.m_command) == commands_map.end()){ return (std::string)vmc::GenericError(rcmd.line_idx, "Command \"" + rcmd.m_command + "\" is not a valid command"); }
+        if(this->errors.size() > 0){ break; }
+        if(rcmd.m_command.size() < 1){ raw_output.push_back(""); continue; }
+        if(commands_map.find(rcmd.m_command) == commands_map.end()){ this->errors.add_end(vmc::GenericError(rcmd.line_idx, "Command \"" + rcmd.m_command + "\" is not a valid command")); continue; }
         auto &cmd = commands_map.at(rcmd.m_command);
         vmc::string_array args(rcmd.m_arguements);
-        return cmd(args, rcmd.line_idx, this->globals, this->flags);
-    });
+        raw_output.push_back(cmd(args, rcmd.line_idx, this->globals, this->flags, this->errors));
+    }
+    
+    if(this->errors.size() > 0){ return; }
 
     std::copy_if(raw_output.begin(), raw_output.end(), std::back_inserter(this->output), [](std::string line)
     {
