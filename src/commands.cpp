@@ -266,6 +266,36 @@ namespace c_commands
         parser->flags.is_conditional_else = false;
         return ins::label(parser->globals.conditional.end_label);
     }
+    std::string xref(vmc::string_array& args, const uint16_t& idx, Parser* parser)
+    {
+        if(args.size() < 3){ parser->errors.add_end(vmc::GenericError(idx, "Insufficient arguments provided. Got " + std::to_string(args.size()) + ", expected 3." )); return ""; }
+        std::string target = args.shift();
+        std::vector<std::string> dv_arr = split_string(target, '.');
+        std::string& device = dv_arr[0];
+        std::string& variable = dv_arr[1];
+        std::string direction = args.shift();
+        if(direction != "<-" && direction != "->"){ parser->errors.add_end(vmc::GenericError(idx, "Invalid direction \"" + direction + "\" provided")); return ""; }
+        std::string reg = args.shift();
+
+        if(direction == "->")
+        {
+            reg = parser->globals.references.get(reg);
+            device = parser->globals.references.get(device);
+            return ins::l(reg, device, variable);
+        }
+        // else direction == "->"
+
+        reg = parse_value(reg, parser->globals);
+        if(starts_with(device, "*"))
+        {
+            device.erase(device.begin());
+            device = parser->globals.references.get(device);
+            return ins::sb(device, variable, reg);
+        }
+
+        device = parser->globals.references.get(device);
+        return ins::s(device, variable, reg);
+    }
 };
 
 std::unordered_map<std::string, cmd_func> commands_map =
@@ -284,5 +314,6 @@ std::unordered_map<std::string, cmd_func> commands_map =
     { "trans", c_commands::trans },
     { "if", c_commands::p_if },
     { "else", c_commands::p_else },
-    { "end", c_commands::end }
+    { "end", c_commands::end },
+    { "xref", c_commands::xref }
 };
