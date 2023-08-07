@@ -7,6 +7,7 @@
 #include "commands.h"
 #include "utils.h"
 #include "data_structs.h"
+#include "constants.h"
 
 namespace c_commands
 {
@@ -18,7 +19,7 @@ namespace c_commands
         std::string selector = args.shift();
         args.shift();
 
-        if(includes(parser->globals.references.m_valid_devices, selector))
+        if(includes(valid_devices, selector))
         {
             std::string name = args.shift();
             parser->globals.references.add(name, selector);

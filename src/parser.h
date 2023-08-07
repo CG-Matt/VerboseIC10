@@ -2,7 +2,6 @@
 
 #include <string>
 #include <vector>
-#include "constants.h"
 #include "comp_structs.h"
 #include "data_structs.h"
 
@@ -18,10 +17,6 @@ class PReference
 class ParserReferences
 {
     public:
-        std::vector<std::string> m_valid_devices = valid_devices;
-        std::vector<std::string> m_available_devices = available_devices;
-        std::vector<std::string> m_valid_registers = valid_registers;
-        std::vector<std::string> m_valid;
         std::vector<PReference> m_definitions;
 
     void add(const std::string& external_name, const std::string& internal_name);

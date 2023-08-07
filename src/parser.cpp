@@ -46,7 +46,7 @@ std::string ParserReferences::get_ext(const std::string& internal_name) const
 }
 std::string ParserReferences::get_free() const
 {
-    for (auto &reg : m_valid_registers)
+    for (auto &reg : valid_registers)
     {
         auto res = std::find_if(m_definitions.begin(), m_definitions.end(), [&reg](const PReference ref)
         {
