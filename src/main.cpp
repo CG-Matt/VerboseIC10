@@ -31,6 +31,17 @@ int main(int argc, char **argv)
     int write_err = write_file(config.out_folder_path, file_name, parser.output);
     if(write_err > 0){ std::cout << "Error writing to file"; }
 
+    // Always log errors if present
+    if(parser.errors.size() > 0)
+    {
+        std::cout << "ERRORS:" << std::endl;
+        for(auto& err : parser.errors)
+        {
+            std::cout << "   - " + err << std::endl;
+        }
+
+        return 1;
+    }
 
     // Log data if required
     if(config.log_ref_table)
