@@ -161,9 +161,22 @@ void Parser::parse()
     for( auto &rcmd : m_input)
     {
         if(this->errors.size() > 0){ break; }
-        if(rcmd.m_command.size() < 1){ raw_output.push_back(""); continue; }
-        if(commands_map.find(rcmd.m_command) == commands_map.end()){ this->errors.add_end(vmc::GenericError(rcmd.line_idx, "Command \"" + rcmd.m_command + "\" is not a valid command")); continue; }
-        auto &cmd = commands_map.at(rcmd.m_command);
+
+        cmd_func cmd;
+
+        if(rcmd.m_command.size() < 1){ continue; }
+        if(commands_map.find(rcmd.m_command) == commands_map.end())
+        {
+            if(!this->globals.references.defined_registers.includes(rcmd.m_command)){ this->errors.add_end(vmc::GenericError(rcmd.line_idx, "Command \"" + rcmd.m_command + "\" is not a valid command")); continue; }
+            if(commands_map.find("set") == commands_map.end()){ this->errors.add_end(vmc::GenericError(rcmd.line_idx, "Call to set command from parser errored")); continue; } // Hopefully will prevent crashes if set is ever removed
+            
+            rcmd.m_arguements.insert(rcmd.m_arguements.begin(), rcmd.m_command);
+            cmd = commands_map.at("set");
+        }
+        else
+        {
+            cmd = commands_map.at(rcmd.m_command);
+        }
         vmc::string_array args(rcmd.m_arguements);
         raw_output.push_back(cmd(args, rcmd.line_idx, this));
     }
