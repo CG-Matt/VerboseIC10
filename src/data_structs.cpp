@@ -70,12 +70,18 @@ namespace vmc
 
 
 
-    GenericError::operator std::string() const
+    ErrorTemplate::operator std::string() const
     {
         return m_data;
     }
+
     GenericError::GenericError(uint16_t line_index, std::string data)
     {
         m_data = "(" + std::to_string(line_index) + ") ERROR: " + data;
+    }
+
+    InsufficientArgsError::InsufficientArgsError(uint16_t line_index, uint16_t recieved, uint16_t expected)
+    {
+        m_data = "(" + std::to_string(line_index) + ") Insufficient arguments provided. Got " + std::to_string(recieved) + ", expected " + std::to_string(expected) + ".";
     }
 }

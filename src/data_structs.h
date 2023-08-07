@@ -36,15 +36,24 @@ namespace vmc
         void add_end(const std::string& data);
     };
 
-    class GenericError
+    class ErrorTemplate
     {
-        private:
+        protected:
             std::string m_data;
 
         public:
+            operator std::string() const;
+    };
 
-        operator std::string() const;
+    class GenericError : public ErrorTemplate
+    {
+        public:
+            GenericError(uint16_t line_index, std::string data);
+    };
 
-        GenericError(uint16_t line_index, std::string data);
+    class InsufficientArgsError : public ErrorTemplate
+    {
+        public:
+            InsufficientArgsError(uint16_t line_index, uint16_t recieved, uint16_t expected);
     };
 }
