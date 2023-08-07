@@ -1,7 +1,6 @@
 #include <string>
 #include <vector>
-#include <map>
-#include <functional>
+#include <unordered_map>
 #include "comp_structs.h"
 #include "instructions.h"
 #include "commands.h"
