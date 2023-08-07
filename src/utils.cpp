@@ -31,6 +31,14 @@ std::string shift(std::vector<std::string>& data)
     return segment;
 }
 
+/*Joins all string in the "data" vector into a single string*/
+std::string join_string(const std::vector<std::string>& data)
+{
+    std::stringstream ss;
+    for( auto& str : data){ ss << str; }
+    return ss.str();
+}
+
 /*Joins all string in the "data" vector into a single string joined together with the "delim" char/string*/
 std::string join_string(const std::vector<std::string>& data, std::string delim)
 {
@@ -114,6 +122,11 @@ std::string parse_value(const std::string& variable, const ParserGlobals& global
 bool starts_with(const std::string& data, const std::string& segment)
 {
     return data.rfind(segment, 0) == 0;
+}
+
+bool ends_with(const std::string& data, const std::string& segment)
+{
+    return data.rfind(segment) == data.size() - segment.size();
 }
 
 std::string B_compare(const std::string& comparator, const std::string& reg, const std::string& value, const std::string& label)

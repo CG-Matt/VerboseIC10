@@ -12,8 +12,10 @@ bool is_reference(const std::string& variable);
 
 // String helpers
 bool starts_with(const std::string& data, const std::string& segment);
+bool ends_with(const std::string& data, const std::string& segment);
 
 // Vector helpers
+std::string join_string(const std::vector<std::string>& data);
 std::string join_string(const std::vector<std::string>& data, std::string delim);
 std::vector<std::string> split_string(const std::string& str, char delim);
 std::string shift(std::vector<std::string>& data);
