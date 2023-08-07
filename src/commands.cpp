@@ -21,7 +21,7 @@ namespace c_commands
         if(includes(valid_devices, selector))
         {
             std::string name = args.shift();
-            parser->globals.references.add(name, selector);
+            parser->globals.references.add(name, selector, ParserReferences::ref_type::dev);
             parser->flags.available_devices--;
             return "";
         }
@@ -33,7 +33,7 @@ namespace c_commands
             if(arr.size() > 6){ parser->errors.add_end(vmc::GenericError(idx, "Too many devices listed. (" + std::to_string(arr.size()) + "/6)")); return ""; }
             for(int i = 0; i < arr.size(); i++)
             {
-                parser->globals.references.add(arr[i], parser->globals.references.m_available_devices[i]);
+                parser->globals.references.add(arr[i], available_devices[i], ParserReferences::ref_type::dev);
             }
             return "";
         }
@@ -50,13 +50,13 @@ namespace c_commands
             vmc::string_array arr = parse_array(args);
             for(auto &entry : arr)
             {
-                parser->globals.references.add(entry, parser->globals.references.get_free());
+                parser->globals.references.add(entry, parser->globals.references.get_free(), ParserReferences::ref_type::reg);
             }
             return "";
         }
 
         std::string reg = parser->globals.references.get_free();
-        parser->globals.references.add(first, reg);
+        parser->globals.references.add(first, reg, ParserReferences::ref_type::reg);
 
         return "";
     }

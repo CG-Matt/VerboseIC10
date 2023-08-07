@@ -18,8 +18,11 @@ class ParserReferences
 {
     public:
         std::vector<PReference> m_definitions;
+        vmc::string_array defined_registers;
 
-    void add(const std::string& external_name, const std::string& internal_name);
+    enum ref_type : uint8_t{ reg, dev };
+
+    void add(const std::string& external_name, const std::string& internal_name, ref_type ref_type);
     std::string get(const std::string& external_name) const;
     std::string get_ext(const std::string& internal_name) const;
     std::string get_free() const;

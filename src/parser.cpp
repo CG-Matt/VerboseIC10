@@ -15,10 +15,14 @@ PReference::PReference(const std::string& internal, const std::string& external)
     m_external = external;
 }
 
-void ParserReferences::add(const std::string& external_name, const std::string& internal_name)
+void ParserReferences::add(const std::string& external_name, const std::string& internal_name, ref_type ref_type)
 {
-    PReference ref(internal_name, external_name);
-    m_definitions.push_back(ref);
+    m_definitions.push_back(PReference(internal_name, external_name));
+    
+    if(ref_type == ParserReferences::ref_type::reg)
+    {
+        this->defined_registers.add_end(external_name);
+    }
 }
 std::string ParserReferences::get(const std::string& external_name) const
 {
@@ -103,7 +107,7 @@ Parser::Parser(std::vector<std::string> &file_contents)
 }
 void Parser::p_init_globals()
 {
-    globals.references.add("Self", "db");
+    globals.references.add("Self", "db", ParserReferences::ref_type::dev);
 }
 void Parser::p_parse_file(std::vector<std::string> file_contents)
 {
@@ -140,7 +144,7 @@ void Parser::p_parse_directives()
 
             if(feature == "carry")
             {
-                globals.references.add("carry", "r15");
+                globals.references.add("carry", "r15", ParserReferences::ref_type::reg);
                 flags.available_registers--;
                 flags.using_carry = true;
             }
