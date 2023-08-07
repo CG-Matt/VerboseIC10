@@ -29,7 +29,9 @@ namespace c_commands
         if(selector == "*")
         {
             parser->flags.devices_initialised = true;
-            vmc::string_array arr(parse_array(args));
+            bool arr_error;
+            vmc::string_array arr = parse_array(args, arr_error);
+            if(arr_error){ parser->errors.add_end(vmc::GenericError(idx, arr[0])); return ""; }
             if(arr.size() > 6){ parser->errors.add_end(vmc::GenericError(idx, "Too many devices listed. (" + std::to_string(arr.size()) + "/6)")); return ""; }
             for(int i = 0; i < arr.size(); i++)
             {
@@ -47,7 +49,9 @@ namespace c_commands
         std::string& first = args[0];
         if(starts_with(first, "["))
         {
-            vmc::string_array arr = parse_array(args);
+            bool arr_error;
+            vmc::string_array arr = parse_array(args, arr_error);
+            if(arr_error){ parser->errors.add_end(vmc::GenericError(idx, arr[0])); return ""; }
             for(auto &entry : arr)
             {
                 parser->globals.references.add(entry, parser->globals.references.get_free(), ParserReferences::ref_type::reg);
@@ -268,7 +272,8 @@ namespace c_commands
     }
     std::string xref(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        if(args.size() < 3){ parser->errors.add_end(vmc::GenericError(idx, "Insufficient arguments provided. Got " + std::to_string(args.size()) + ", expected 3." )); return ""; }
+        // if(args.size() < 3){ parser->errors.add_end(vmc::GenericError(idx, "Insufficient arguments provided. Got " + std::to_string(args.size()) + ", expected 3." )); return ""; }
+        if(args.size() < 3){ parser->errors.add_end(vmc::InsufficientArgsError(idx, args.size(), 3)); return ""; }
         std::string target = args.shift();
         std::vector<std::string> dv_arr = split_string(target, '.');
         std::string& device = dv_arr[0];

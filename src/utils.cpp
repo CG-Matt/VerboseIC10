@@ -4,6 +4,7 @@
 #include <sstream>
 #include "parser.h"
 #include "instructions.h"
+#include "utils.h"
 
 /*Splits the string "str" at every "delim" char*/
 std::vector<std::string> split_string(const std::string& str, char delim)
@@ -64,9 +65,41 @@ bool includes(const std::vector<std::string>& data, std::string search_string)
     return true;
 }
 
-std::vector<std::string> parse_array(const std::vector<std::string>& data)
+/*Checks if a string includes a "search_char"*/
+bool includes(const std::string& data, char search_char)
 {
-    std::string line = join_string(data, "");
+    auto it = std::find_if(data.begin(), data.end(), [&search_char](const char token)
+    {
+        return token == search_char;
+    });
+    if(it == data.end()){ return false; }
+
+    return true;
+}
+
+std::vector<std::string> parse_array(const std::vector<std::string>& data, bool& error)
+{
+    std::string line = join_string(data); // Turn the array into a string
+    
+    if(!starts_with(line, "[")) // Return error if first char does not open array
+    {
+        error = true;
+        return std::vector<std::string>{"First character does not open array."};
+    }
+
+    if(!includes(line, ']')) // Return error if no array terminator is found
+    {
+        error = true;
+        return std::vector<std::string>{"No array terminator found. \"]\" expected."};
+    }
+
+    size_t terminator_idx = line.find_first_of(']');
+    if(terminator_idx != line.size())
+    {
+        line.erase(terminator_idx + 1);
+    }
+
+    error = false;
     line.erase(line.begin());
     line.erase(line.end() - 1);
     return split_string(line, ',');
