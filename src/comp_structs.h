@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include "data_structs.h"
 
 struct ConditionalInfo
 {
@@ -27,6 +28,15 @@ struct RawCommand
     std::vector<std::string> m_arguements;
 
     RawCommand(std::vector<std::string> line, uint16_t line_idx);
+};
+
+struct ProgramLine
+{
+    uint16_t m_line_idx;
+    std::string m_first;
+    vmc::string_array m_args;
+
+    ProgramLine(const std::string& line, uint16_t line_idx);
 };
 
 class List
