@@ -5,44 +5,6 @@
 #include "comp_structs.h"
 #include "utils.h"
 
-RawDirective::RawDirective(std::vector<std::string> line, uint16_t line_idx)
-{
-    this->line_idx = line_idx;
-    // Check if line is empty first (causes seg fault if empty)
-    if(line.size() < 1)
-    {
-        m_directive = "";
-        return;
-    }
-    // First element of the line becomes the directive
-    std::string directive = line[0];
-    line.erase(line.begin());
-    // Removing the "#" from the beginning of the directive
-    directive.erase(0, 1);
-    m_directive = directive;
-    // Setting the arguments to be the rest of the line
-    m_arguments = line;
-}
-
-
-
-// Possibly filter command to not include empty lines
-RawCommand::RawCommand(std::vector<std::string> line, uint16_t line_idx)
-{
-    this->line_idx = line_idx;
-    // Check if line is empty first (causes seg fault if empty)
-    if(line.size() < 1)
-    {
-        m_command = "";
-        return;
-    }
-    // First element of the line becomes the command
-    m_command = line[0];
-    line.erase(line.begin());
-    // Setting the arguments to be the rest of the line
-    m_arguements = line;
-}
-
 ProgramLine::ProgramLine(const std::string& line, uint16_t line_idx)
 {
     // Set the line_idx of the struct

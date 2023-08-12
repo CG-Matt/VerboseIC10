@@ -12,24 +12,6 @@ struct ConditionalInfo
     std::string end_label = "";
 };
 
-struct RawDirective
-{
-    uint16_t line_idx;
-    std::string m_directive;
-    std::vector<std::string> m_arguments;
-
-    RawDirective(std::vector<std::string> line, uint16_t line_idx);
-};
-
-struct RawCommand
-{
-    uint16_t line_idx;
-    std::string m_command;
-    std::vector<std::string> m_arguements;
-
-    RawCommand(std::vector<std::string> line, uint16_t line_idx);
-};
-
 struct ProgramLine
 {
     uint16_t m_line_idx;
