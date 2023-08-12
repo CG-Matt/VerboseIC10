@@ -111,7 +111,7 @@ void Parser::p_init_globals()
 }
 void Parser::p_parse_file(std::vector<std::string> file_contents)
 {
-    for(unsigned int i = 0; i < file_contents.size(); i++)
+    for(uint16_t i = 0; i < file_contents.size(); i++)
     {
         std::string& line = file_contents[i];
 
