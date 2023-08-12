@@ -47,8 +47,6 @@ ProgramLine::ProgramLine(const std::string& line, uint16_t line_idx)
 {
     // Set the line_idx of the struct
     this->m_line_idx = line_idx;
-    // Check if line is empty first (causes seg fault if empty)
-    if(line.size() < 1){ this->m_first = ""; return; }
     // The line is split into tokens
     std::vector<std::string> tokens = split_string(line, ' ');
     // First token becomes the command/directive and gets removed from the array

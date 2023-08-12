@@ -115,6 +115,8 @@ void Parser::p_parse_file(std::vector<std::string> file_contents)
     {
         std::string& line = file_contents[i];
 
+        if(line.size() < 1){ continue; } // Ensure that the line is not empty
+
         while(starts_with(line, " ")){ line.erase(line.begin()); }
 
         if(starts_with(line, "$")){ continue; } // Ignore Comments
