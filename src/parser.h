@@ -62,8 +62,8 @@ class Parser
         ParserFlags flags;
 
     private:
-        std::vector<RawDirective> m_directives;
-        std::vector<RawCommand> m_input;
+        std::vector<ProgramLine> m_directives;
+        std::vector<ProgramLine> m_input;
 
     public:
 

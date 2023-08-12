@@ -120,28 +120,28 @@ void Parser::p_parse_file(std::vector<std::string> file_contents)
         if(starts_with(line, "$")){ continue; } // Ignore Comments
         if(starts_with(line, "#"))
         {
-            m_directives.push_back(RawDirective(split_string(line, ' '), i+1));
+            this->m_directives.push_back(ProgramLine(line, i+1));
             continue;
         }
 
-        m_input.push_back(RawCommand(split_string(line, ' '), i+1));
+        this->m_input.push_back(ProgramLine(line, i+1));
     }
 }
 void Parser::p_parse_directives()
 {
     for(auto &rdirective : m_directives)
     {
-        std::string& cur_directive = rdirective.m_directive;
-        std::vector<std::string>& args = rdirective.m_arguments;
+        std::string& cur_directive = rdirective.m_first;
+        vmc::string_array& args = rdirective.m_args;
 
         if(cur_directive == "version")
         {
-            if(args.size() < 1){ errors.add_end(vmc::GenericError(rdirective.line_idx, "No version number provided")); continue; }
+            if(!args.contains_data()){ errors.add_end(vmc::GenericError(rdirective.m_line_idx, "No version number provided")); continue; }
             flags.version = std::stoi(args[0]);
         }
         if(cur_directive == "using")
         {
-            if(args.size() < 1){ errors.add_end(vmc::GenericError(rdirective.line_idx, "No module name provided")); continue; }
+            if(!args.contains_data()){ errors.add_end(vmc::GenericError(rdirective.m_line_idx, "No module name provided")); continue; }
             std::string &feature = args[0];
 
             if(feature == "carry")
@@ -166,21 +166,20 @@ void Parser::parse()
 
         cmd_func cmd;
 
-        if(rcmd.m_command.size() < 1){ continue; }
-        if(commands_map.find(rcmd.m_command) == commands_map.end())
+        if(rcmd.m_first.size() < 1){ continue; }
+        if(commands_map.find(rcmd.m_first) == commands_map.end())
         {
-            if(!this->globals.references.defined_registers.includes(rcmd.m_command)){ this->errors.add_end(vmc::GenericError(rcmd.line_idx, "Command \"" + rcmd.m_command + "\" is not a valid command")); continue; }
-            if(commands_map.find("set") == commands_map.end()){ this->errors.add_end(vmc::GenericError(rcmd.line_idx, "Call to set command from parser errored")); continue; } // Hopefully will prevent crashes if set is ever removed
+            if(!this->globals.references.defined_registers.includes(rcmd.m_first)){ this->errors.add_end(vmc::GenericError(rcmd.m_line_idx, "Command \"" + rcmd.m_first + "\" is not a valid command")); continue; }
+            if(commands_map.find("set") == commands_map.end()){ this->errors.add_end(vmc::GenericError(rcmd.m_line_idx, "Call to set command from parser errored")); continue; } // Hopefully will prevent crashes if set is ever removed
             
-            rcmd.m_arguements.insert(rcmd.m_arguements.begin(), rcmd.m_command);
+            rcmd.m_args.add_begin(rcmd.m_first);
             cmd = commands_map.at("set");
         }
         else
         {
-            cmd = commands_map.at(rcmd.m_command);
+            cmd = commands_map.at(rcmd.m_first);
         }
-        vmc::string_array args(rcmd.m_arguements);
-        raw_output.push_back(cmd(args, rcmd.line_idx, this));
+        raw_output.push_back(cmd(rcmd.m_args, rcmd.m_line_idx, this));
     }
     
     if(this->errors.size() > 0){ return; }
