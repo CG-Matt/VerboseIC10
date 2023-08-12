@@ -25,6 +25,7 @@ namespace vmc
         string_array();
         string_array(const std::vector<std::string>& data);
 
+        void set(const std::vector<std::string>& data);
         std::vector<std::string> out() const;
 
         bool contains_data();
@@ -34,6 +35,7 @@ namespace vmc
         std::string& v_shift();
         std::string join(std::string delim);
         void add_end(const std::string& data);
+        void add_begin(const std::string& data);
     };
 
     class ErrorTemplate

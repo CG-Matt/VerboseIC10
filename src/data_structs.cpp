@@ -18,6 +18,7 @@ namespace vmc
     {
         m_data = data;
     }
+    void string_array::set(const std::vector<std::string>& data){ m_data = data; }
     std::vector<std::string> string_array::out() const
     {
         return m_data;
@@ -66,6 +67,11 @@ namespace vmc
     void string_array::add_end(const std::string& data)
     {
         m_data.push_back(data);
+    }
+
+    void string_array::add_begin(const std::string& data)
+    {
+        m_data.insert(m_data.begin(), data);
     }
 
 
