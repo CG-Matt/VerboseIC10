@@ -55,7 +55,7 @@ namespace vmc
     std::string string_array::join(std::string delim)
     {
         std::stringstream ss;
-        for(unsigned int i = 0; i < m_data.size(); i++)
+        for(uint16_t i = 0; i < m_data.size(); i++)
         {
             if(i != 0){ ss << delim; }
             ss << m_data[i];
