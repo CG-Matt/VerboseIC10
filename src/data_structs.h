@@ -38,8 +38,6 @@ namespace vmc
         string_array();
         string_array(const std::vector<std::string>& data);
 
-        std::vector<std::string> out() const;
-
         bool contains_data();
         bool includes(const std::string& search_string) const;
         std::string shift();

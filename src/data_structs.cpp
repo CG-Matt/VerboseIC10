@@ -23,10 +23,6 @@ namespace vmc
     {
         m_data = data;
     }
-    std::vector<std::string> string_array::out() const
-    {
-        return m_data;
-    }
 
     bool string_array::contains_data(){ return m_data.size() > 0; }
     bool string_array::includes(const std::string& search_string) const
