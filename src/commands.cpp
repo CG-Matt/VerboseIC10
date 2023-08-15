@@ -286,7 +286,7 @@ namespace c_commands
             parser->output.add_end(ins::l(reg, device, variable));
             return;
         }
-        // else direction == "->"
+        // else direction == "<-"
 
         reg = parse_value(reg, parser->globals);
         if(starts_with(device, "*"))
