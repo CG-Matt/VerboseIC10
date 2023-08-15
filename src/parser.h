@@ -57,7 +57,7 @@ class Parser
 {
     public:
         vmc::string_array errors;
-        std::vector<std::string> output;
+        vmc::string_array output;
         ParserGlobals globals;
         ParserFlags flags;
 
