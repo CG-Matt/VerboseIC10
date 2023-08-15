@@ -12,6 +12,12 @@ namespace vmc
         std::string m_data;
     };
 
+    struct string_array_view
+    {
+        std::vector<std::string>::iterator start;
+        std::vector<std::string>::iterator end;
+    };
+
     class string_array
     {
         private:
