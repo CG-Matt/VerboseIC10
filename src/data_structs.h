@@ -6,6 +6,12 @@
 // Verbose MIPS Compiler
 namespace vmc
 {
+    struct Line
+    {
+        uint16_t m_idx;
+        std::string m_data;
+    };
+
     class string_array
     {
         private:
