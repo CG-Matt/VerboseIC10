@@ -183,7 +183,7 @@ void Parser::parse()
         {
             cmd = commands_map.at(rcmd.m_first);
         }
-        raw_output.push_back(cmd(rcmd.m_args, rcmd.m_line_idx, this));
+        cmd(rcmd.m_args, rcmd.m_line_idx, this);
     }
     
     if(this->errors.size() > 0){ return; }
