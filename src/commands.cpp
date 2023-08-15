@@ -15,12 +15,12 @@ namespace c_commands
         if(parser->flags.devices_initialised == true){ parser->errors.add_end(vmc::GenericError(idx, "Devices have already been initialised")); return; }
         if(parser->flags.available_devices <= 0){ parser->errors.add_end(vmc::GenericError(idx, "Max device limit reached")); return; }
         
-        std::string selector = args.shift();
-        args.shift();
+        std::string& selector = args.v_shift();
+        args.v_shift();
 
         if(includes(valid_devices, selector))
         {
-            std::string name = args.shift();
+            std::string& name = args.v_shift();
             parser->globals.references.add(name, selector, ParserReferences::ref_type::dev);
             parser->flags.available_devices--;
             return;
@@ -30,7 +30,7 @@ namespace c_commands
         {
             parser->flags.devices_initialised = true;
             bool arr_error;
-            vmc::string_array arr = parse_array(args, arr_error);
+            vmc::string_array arr = parse_array(args.make_offset_view(), arr_error);
             if(arr_error){ parser->errors.add_end(vmc::GenericError(idx, arr[0])); return; }
             if(arr.size() > 6){ parser->errors.add_end(vmc::GenericError(idx, "Too many devices listed. (" + std::to_string(arr.size()) + "/6)")); return; }
             for(int i = 0; i < arr.size(); i++)
@@ -45,7 +45,7 @@ namespace c_commands
     void reg(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         if(!args.contains_data()){ parser->errors.add_end(vmc::GenericError(idx, "Register names not provided")); return; }
-        std::string& first = args[0];
+        std::string& first = args.v_shift();
         if(starts_with(first, "["))
         {
             bool arr_error;
@@ -63,9 +63,9 @@ namespace c_commands
     }
     void set(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        std::string reg = args.shift();
-        args.shift(); // Discard next token
-        std::string value = args.shift();
+        std::string& reg = args.v_shift();
+        args.v_shift(); // Discard next token
+        std::string& value = args.v_shift();
 
         reg = parser->globals.references.get(reg);
         value = parse_value(value, parser->globals);
@@ -74,7 +74,7 @@ namespace c_commands
     }
     void label(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        std::string name = args.shift();
+        std::string& name = args.v_shift();
         if(name.size() < 1){ parser->errors.add_end(vmc::GenericError(idx, "Label name required")); return; }
         parser->globals.register_label(name);
 
@@ -82,9 +82,9 @@ namespace c_commands
     }
     void eport(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        std::string target = args.shift();
-        args.shift(); // Discard next token
-        std::string value = args.shift();
+        std::string& target = args.v_shift();
+        args.v_shift(); // Discard next token
+        std::string& value = args.v_shift();
         auto dv_arr = split_string(target, '.');
         std::string device = dv_arr[0];
         std::string variable = dv_arr[1];
@@ -112,25 +112,25 @@ namespace c_commands
     }
     void move(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        std::string lines = args.shift();
-        std::string condition = args.shift();
+        std::string& lines = args.v_shift();
+        std::string& condition = args.v_shift();
 
         if(condition.size() < 1){ parser->output.add_end(ins::jr(lines)); return; }
 
-        std::string reg = args.shift();
-        std::string compare = args.shift();
-        std::string value = args.shift();
+        std::string& reg = args.v_shift();
+        std::string& compare = args.v_shift();
+        std::string& value = args.v_shift();
 
         reg = parser->globals.references.get(reg);
         parser->output.add_end(BR_compare(compare, reg, value, lines));
     }
     void math(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        std::string reg = args.shift();
-        args.shift(); // Discard next token
-        std::string var1 = args.shift();
-        std::string op = args.shift();
-        std::string var2 = args.shift();
+        std::string& reg = args.v_shift();
+        args.v_shift(); // Discard next token
+        std::string& var1 = args.v_shift();
+        std::string& op = args.v_shift();
+        std::string& var2 = args.v_shift();
 
         reg = parser->globals.references.get(reg);
         var1 = parse_value(var1, parser->globals);
@@ -151,9 +151,9 @@ namespace c_commands
     }
     void import(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        std::string reg = args.shift();
-        args.shift(); // Discard next token
-        std::string target = args.shift();
+        std::string& reg = args.v_shift();
+        args.v_shift(); // Discard next token
+        std::string& target = args.v_shift();
         auto dv_arr = split_string(target, '.');
         std::string& device = dv_arr[0];
         std::string& variable = dv_arr[1];
@@ -165,15 +165,15 @@ namespace c_commands
     }
     void branch(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        args.shift(); // Discard first token
-        std::string label = args.shift();
-        std::string condition = args.shift();
+        args.v_shift(); // Discard first token
+        std::string& label = args.v_shift();
+        std::string& condition = args.v_shift();
 
         if(condition.size() < 1){ return; }
 
-        std::string var1 = args.shift();
-        std::string compare = args.shift();
-        std::string var2 = args.shift();
+        std::string& var1 = args.v_shift();
+        std::string& compare = args.v_shift();
+        std::string& var2 = args.v_shift();
 
         var1 = parse_value(var1, parser->globals);
         var2 = parse_value(var2, parser->globals);
@@ -184,9 +184,9 @@ namespace c_commands
     {
         if(!parser->flags.using_carry){ parser->errors.add_end(vmc::GenericError(idx, "You must specify the use of carry to use the trans command (#using carry)")); return; }
 
-        std::string source = args.shift();
-        args.shift();
-        std::string destination = args.shift();
+        std::string& source = args.v_shift();
+        args.v_shift();
+        std::string& destination = args.v_shift();
         auto sdv_arr = split_string(source, '.');
         std::string& s_device = sdv_arr[0];
         std::string& s_variable = sdv_arr[1];
@@ -271,13 +271,13 @@ namespace c_commands
     void xref(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         if(args.size() < 3){ parser->errors.add_end(vmc::InsufficientArgsError(idx, args.size(), 3)); return; }
-        std::string target = args.shift();
-        std::vector<std::string> dv_arr = split_string(target, '.');
+        std::string& target = args.v_shift();
+        auto dv_arr = split_string(target, '.');
         std::string& device = dv_arr[0];
         std::string& variable = dv_arr[1];
-        std::string direction = args.shift();
+        std::string& direction = args.v_shift();
         if(direction != "<-" && direction != "->"){ parser->errors.add_end(vmc::GenericError(idx, "Invalid direction \"" + direction + "\" provided")); return; }
-        std::string reg = args.shift();
+        std::string& reg = args.v_shift();
 
         if(direction == "->")
         {
