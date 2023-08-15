@@ -33,11 +33,11 @@ namespace vmc
         
         operator std::vector<std::string>() const;
         std::string& operator[](size_t idx);
+        vmc::string_array& operator=(const std::vector<std::string>& data);
 
         string_array();
         string_array(const std::vector<std::string>& data);
 
-        void set(const std::vector<std::string>& data);
         std::vector<std::string> out() const;
 
         bool contains_data();

@@ -12,13 +12,17 @@ namespace vmc
 
     string_array::operator std::vector<std::string>() const { return m_data; }
     std::string& string_array::operator[](size_t idx){ return m_data[idx]; }
+    vmc::string_array& string_array::operator=(const std::vector<std::string>& data)
+    {
+        m_data = data;
+        return *this;
+    }
 
     string_array::string_array(){}
     string_array::string_array(const std::vector<std::string>& data)
     {
         m_data = data;
     }
-    void string_array::set(const std::vector<std::string>& data){ m_data = data; }
     std::vector<std::string> string_array::out() const
     {
         return m_data;

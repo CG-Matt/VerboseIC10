@@ -18,7 +18,7 @@ ProgramLine::ProgramLine(const std::string& line, uint16_t line_idx)
     if(starts_with(first, "#")){ first.erase(first.begin()); }
     // Set first ands args member variables
     this->m_first = first;
-    this->m_args.set(tokens);
+    this->m_args = tokens;
 }
 
 unsigned int List::get_length() const { return m_length; }
