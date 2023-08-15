@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 
     if(file_name.size() < 1)
     {
-        std::cout << "Please provide the name of a file to parse";
+        std::cout << "Please provide the name of a file to parse" << std::endl;
         return 1;
     }
 
