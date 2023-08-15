@@ -161,9 +161,8 @@ void Parser::parse()
 {
     if(flags.version != version){ return; }
 
-    std::vector<std::string> raw_output;
 
-    // Calling each command in the file and saving the results to a temporary buffer
+    // Calling each command in the file
     for( auto &rcmd : m_input)
     {
         if(this->errors.size() > 0){ break; }
@@ -185,11 +184,4 @@ void Parser::parse()
         }
         cmd(rcmd.m_args, rcmd.m_line_idx, this);
     }
-    
-    if(this->errors.size() > 0){ return; }
-
-    std::copy_if(raw_output.begin(), raw_output.end(), std::back_inserter(this->output), [](std::string line)
-    {
-        return line.size() > 0;
-    });
 }
