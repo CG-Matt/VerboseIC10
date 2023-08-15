@@ -27,6 +27,11 @@ namespace vmc
         m_data = data;
     }
 
+    /*Returns the array's index offset*/
+    uint32_t string_array::get_offset(){ return m_offset; }
+    /*Preallocate space for the internal vector*/
+    void string_array::reserve(size_t size){ m_data.reserve(size); }
+
     /*Checks if the array length != 0*/
     bool string_array::contains_data(){ return m_data.size() > 0; }
     /*Checks if the array contains the seach_string*/
@@ -63,6 +68,15 @@ namespace vmc
         std::string& data = m_data[m_offset];
         m_offset++;
         return data;
+    }
+
+    /*
+        Returns a string_array_view starting at the internal offset.
+        As views allow direct access to the array's data they are not const.
+    */
+    vmc::string_array_view string_array::make_offset_view()
+    {
+        return vmc::string_array_view{m_data.begin() + m_offset, m_data.end()};
     }
 
     /*Joins all the elements in the array with the "delim" token and returns them as a string*/
