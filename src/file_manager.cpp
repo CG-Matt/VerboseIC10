@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include "file_manager.h"
 
-std::vector<std::string> read_file(const std::string& file_path, const std::string &file_name)
+std::vector<vmc::Line> read_file(const std::string& file_path, const std::string &file_name)
 {
     std::ifstream file(file_path + "/" + file_name + ".vic10");
     if(!file.is_open())
@@ -13,12 +13,14 @@ std::vector<std::string> read_file(const std::string& file_path, const std::stri
         throw std::runtime_error("Failed to open file: " + file_name);
     }
 
-    std::vector<std::string> file_contents;
+    std::vector<vmc::Line> file_contents;
     std::string line;
 
+    uint16_t line_idx = 0;
     while(getline(file, line))
     {
-        file_contents.push_back(line);
+        file_contents.push_back(vmc::Line{line_idx, line});
+        line_idx++;
     }
 
     file.close();

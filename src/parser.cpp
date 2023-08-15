@@ -96,7 +96,7 @@ bool ParserGlobals::label_exists(const std::string& label)
 
 
 
-Parser::Parser(std::vector<std::string> &file_contents)
+Parser::Parser(std::vector<vmc::Line> &file_contents)
 {
     // Initialise globals
     p_init_globals();
@@ -109,24 +109,26 @@ void Parser::p_init_globals()
 {
     globals.references.add("Self", "db", ParserReferences::ref_type::dev);
 }
-void Parser::p_parse_file(std::vector<std::string> file_contents)
+void Parser::p_parse_file(std::vector<vmc::Line>& file_contents)
 {
-    for(uint16_t i = 0; i < file_contents.size(); i++)
+    this->m_input.reserve(file_contents.size()); // Reduced mallocs by ~40
+    for(auto& line : file_contents)
     {
-        std::string& line = file_contents[i];
+        std::string& text = line.m_data;
 
-        if(line.size() < 1){ continue; } // Ensure that the line is not empty
+        if(text.size() < 1){ continue; } // Ensure that the line is not empty
+        if(text.find_first_not_of(' ') == std::string::npos){ continue; } // Ensure that the line isnt just spaces
 
-        while(starts_with(line, " ")){ line.erase(line.begin()); }
+        while(starts_with(text, " ")){ text.erase(text.begin()); }
 
-        if(starts_with(line, "$")){ continue; } // Ignore Comments
-        if(starts_with(line, "#"))
+        if(starts_with(text, "$")){ continue; } // Ignore Comments
+        if(starts_with(text, "#"))
         {
-            this->m_directives.push_back(ProgramLine(line, i+1));
+            this->m_directives.push_back(ProgramLine(text, line.m_idx+1));
             continue;
         }
 
-        this->m_input.push_back(ProgramLine(line, i+1));
+        this->m_input.push_back(ProgramLine(text, line.m_idx+1));
     }
 }
 void Parser::p_parse_directives()

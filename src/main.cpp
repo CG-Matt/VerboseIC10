@@ -4,6 +4,7 @@
 #include "file_manager.h"
 #include "parser.h"
 #include "utils.h"
+#include "data_structs.h"
 
 int main(int argc, char **argv)
 {
@@ -21,7 +22,7 @@ int main(int argc, char **argv)
     Config config = read_config_file();
 
     // Read file
-    std::vector<std::string> file_contents = read_file(config.in_folder_path, file_name);
+    std::vector<vmc::Line> file_contents = read_file(config.in_folder_path, file_name);
 
     // Parse file
     Parser parser(file_contents);

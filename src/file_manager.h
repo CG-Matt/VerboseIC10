@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include "data_structs.h"
 
 struct Config
 {
@@ -13,7 +14,7 @@ struct Config
     uint8_t max_register_count;
 };
 
-std::vector<std::string> read_file(const std::string& file_path, const std::string &file_name);
+std::vector<vmc::Line> read_file(const std::string& file_path, const std::string &file_name);
 int write_file(const std::string& file_path, const std::string& file_name, const std::vector<std::string>& data);
 
 Config read_config_file();
