@@ -32,6 +32,17 @@ std::string shift(std::vector<std::string>& data)
     return segment;
 }
 
+/*Joins all entries in the view into a single string*/
+std::string join_string(const vmc::string_array_view& view)
+{
+    std::stringstream ss;
+    for(std::vector<std::string>::iterator it = view.start; it != view.end; it++)
+    {
+        ss << *it;
+    }
+    return ss.str();
+}
+
 /*Joins all string in the "data" vector into a single string*/
 std::string join_string(const std::vector<std::string>& data)
 {
@@ -80,6 +91,34 @@ bool includes(const std::string& data, char search_char)
 std::vector<std::string> parse_array(const std::vector<std::string>& data, bool& error)
 {
     std::string line = join_string(data); // Turn the array into a string
+    
+    if(!starts_with(line, "[")) // Return error if first char does not open array
+    {
+        error = true;
+        return std::vector<std::string>{"First character does not open array."};
+    }
+
+    if(!includes(line, ']')) // Return error if no array terminator is found
+    {
+        error = true;
+        return std::vector<std::string>{"No array terminator found. \"]\" expected."};
+    }
+
+    size_t terminator_idx = line.find_first_of(']');
+    if(terminator_idx != line.size())
+    {
+        line.erase(terminator_idx + 1);
+    }
+
+    error = false;
+    line.erase(line.begin());
+    line.erase(line.end() - 1);
+    return split_string(line, ',');
+}
+
+std::vector<std::string> parse_array(const vmc::string_array_view& view, bool& error)
+{
+    std::string line = join_string(view); // Turn the array into a string
     
     if(!starts_with(line, "[")) // Return error if first char does not open array
     {
