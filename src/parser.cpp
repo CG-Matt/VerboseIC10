@@ -161,6 +161,7 @@ void Parser::parse()
 {
     if(flags.version != version){ return; }
 
+    this->output.reserve(m_input.size());
 
     // Calling each command in the file
     for( auto &rcmd : m_input)
