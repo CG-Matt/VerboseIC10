@@ -21,7 +21,6 @@ std::string join_string(const vmc::string_array_view& view);
 std::string join_string(const std::vector<std::string>& data);
 std::string join_string(const std::vector<std::string>& data, std::string delim);
 std::vector<std::string> split_string(const std::string& str, char delim);
-std::string shift(std::vector<std::string>& data);
 bool includes(const std::vector<std::string>& data, std::string search_string);
 
 // Custom data parsing

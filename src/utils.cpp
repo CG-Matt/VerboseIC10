@@ -21,17 +21,6 @@ std::vector<std::string> split_string(const std::string& str, char delim)
     return out;
 }
 
-/*Removes and returns the first element of the "data" vector.
-Returns empty string if it reaches the end of the vector*/
-std::string shift(std::vector<std::string>& data)
-{
-    if(data.size() < 1){ return ""; }
-
-    std::string segment = data[0];
-    data.erase(data.begin());
-    return segment;
-}
-
 /*Joins all entries in the view into a single string*/
 std::string join_string(const vmc::string_array_view& view)
 {
