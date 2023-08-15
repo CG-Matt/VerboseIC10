@@ -6,8 +6,11 @@
 
 namespace vmc
 {
+    /*Access to internal vectors begin iterator*/
     std::vector<std::string>::iterator string_array::begin(){ return m_data.begin(); }
+    /*Access to internal vectors end iterator*/
     std::vector<std::string>::iterator string_array::end(){ return m_data.end(); }
+    /*Access to internal vectors size*/
     std::size_t string_array::size(){ return m_data.size(); }
 
     string_array::operator std::vector<std::string>() const { return m_data; }
@@ -24,7 +27,9 @@ namespace vmc
         m_data = data;
     }
 
+    /*Checks if the array length != 0*/
     bool string_array::contains_data(){ return m_data.size() > 0; }
+    /*Checks if the array contains the seach_string*/
     bool string_array::includes(const std::string& search_string) const
     {
         auto it = std::find_if(m_data.begin(), m_data.end(), [&search_string](const std::string token)
@@ -34,6 +39,10 @@ namespace vmc
         return it != m_data.end();
     }
 
+    /*
+        Removes the first element from the array and returns it.
+        Returns an empty string if it reaches the end of the array.
+    */
     std::string string_array::shift()
     {
         if(m_data.size() < 1){ return ""; }
@@ -43,6 +52,10 @@ namespace vmc
         return str;
     }
 
+    /*
+        Virtual Shift, returns reference to string at offset and increases offset.
+        Returns refernce to an empty string if it reaches the end of the array.
+    */
     std::string& string_array::v_shift()
     {
         if(m_offset >= m_data.size()){ return (std::string&)m_empty_str; }
@@ -52,6 +65,7 @@ namespace vmc
         return data;
     }
 
+    /*Joins all the elements in the array with the "delim" token and returns them as a string*/
     std::string string_array::join(std::string delim)
     {
         std::stringstream ss;
@@ -64,11 +78,13 @@ namespace vmc
         return ss.str();
     }
 
+    /*Adds a new element to the end of the array*/
     void string_array::add_end(const std::string& data)
     {
         m_data.push_back(data);
     }
 
+    /*Adds a new element to the beginning of the array*/
     void string_array::add_begin(const std::string& data)
     {
         m_data.insert(m_data.begin(), data);

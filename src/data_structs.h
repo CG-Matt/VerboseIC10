@@ -41,7 +41,6 @@ namespace vmc
         bool contains_data();
         bool includes(const std::string& search_string) const;
         std::string shift();
-        /*Virtual Shift. Returns reference to string at offset and increases offset.*/
         std::string& v_shift();
         std::string join(std::string delim);
         void add_end(const std::string& data);
