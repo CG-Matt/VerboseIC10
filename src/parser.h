@@ -67,12 +67,12 @@ class Parser
 
     public:
 
-    Parser(std::vector<std::string> &file_contents);
+    Parser(std::vector<vmc::Line> &file_contents);
 
     private:
 
     void p_init_globals();
-    void p_parse_file(std::vector<std::string> file_contents);
+    void p_parse_file(std::vector<vmc::Line>& file_contents);
     void p_parse_directives();
 
     public:
