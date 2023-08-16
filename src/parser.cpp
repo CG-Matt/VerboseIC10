@@ -70,9 +70,9 @@ ConditionalInfo ParserGlobals::generate_conditional_labels()
 {
     int current_index = conditional.idx;
     conditional.idx++;
-    conditional.pass_label = "cp" + current_index;
-    conditional.fail_label = "cf" + current_index;
-    conditional.end_label  = "ce" + current_index;
+    conditional.pass_label = "cp" + std::to_string(current_index);
+    conditional.fail_label = "cf" + std::to_string(current_index);
+    conditional.end_label  = "ce" + std::to_string(current_index);
 
     register_label({ conditional.pass_label, conditional.fail_label, conditional.end_label });
 
