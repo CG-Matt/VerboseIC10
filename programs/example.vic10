@@ -92,9 +92,9 @@ trans vending_machine.Setting => computer.Setting
 
 
 
-$ math is used to perform +,-,* and / operations on variables
-$ You can write the output of a math operation back to the register used in the equation
-math counter = counter + 10
+$ math is used to perform +, -, * and / operations on variables
+$ The math command also supports +=, -=, *= and /= operations
+math counter += 10
 
 
 
@@ -146,7 +146,7 @@ $ The end command is used to specify the end of the if statement
 if var1 != 0 and counter > 20
     trans computer.PrefabHash => computer.Setting
 else
-    math counter = counter + 10
+    math counter += 10
 end
 
 $ If commands do not require an else statement and will work without one

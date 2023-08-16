@@ -127,15 +127,33 @@ namespace c_commands
     void math(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         std::string& reg = args.v_shift();
-        args.v_shift(); // Discard next token
+        std::string& set_op = args.v_shift();
         std::string& var1 = args.v_shift();
-        std::string& op = args.v_shift();
-        std::string& var2 = args.v_shift();
+        std::string op;
+        std::string var2;
+
+        if(set_op == "+=" || set_op == "-=" || set_op == "*=" || set_op == "/=")
+        {
+            op = set_op[0];
+            var2 = var1;
+            var1 = reg;
+        }
+        else if(set_op == "=")
+        {
+            op = args.v_shift();
+            var2 = args.v_shift();
+        }
+        else
+        {
+            parser->errors.add_end(vmc::InvalidMathOpError(idx, set_op));
+            return;
+        }
 
         reg = parser->globals.references.get(reg);
         var1 = parse_value(var1, parser->globals);
         var2 = parse_value(var2, parser->globals);
 
+        if(operations.find(op) == operations.end()){ parser->errors.add_end(vmc::InvalidMathOpError(idx, op)); return; }
         op = operations.at(op);
 
         parser->output.add_end(ins::math(op, reg, var1, var2));
