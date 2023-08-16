@@ -80,13 +80,41 @@ ConditionalInfo ParserGlobals::generate_conditional_labels()
 }
 void ParserGlobals::register_label(const std::string& label)
 {
-    labels.push_back(label);
+    this->labels.push_back(label);
+
+    if(this->unresolved_labels.size() < 1){ return; }
+
+    std::vector<vmc::Line>::iterator it = this->unresolved_labels.begin();
+    while(it != this->unresolved_labels.end())
+    {
+        auto it = std::find_if(this->unresolved_labels.begin(), this->unresolved_labels.end(), [&label](const vmc::Line& line)
+        {
+            return line.m_data == label;
+        });
+        if(it == this->unresolved_labels.end()){ break; }
+
+        this->unresolved_labels.erase(it);
+    }
 }
 void ParserGlobals::register_label(const std::vector<std::string>& labels)
 {
     for(auto& label : labels)
     {
         this->labels.push_back(label);
+
+        if(this->unresolved_labels.size() < 1){ return; }
+
+        std::vector<vmc::Line>::iterator it = this->unresolved_labels.begin();
+        while(it != this->unresolved_labels.end())
+        {
+            auto it = std::find_if(this->unresolved_labels.begin(), this->unresolved_labels.end(), [&label](const vmc::Line& line)
+            {
+                return line.m_data == label;
+            });
+            if(it == this->unresolved_labels.end()){ break; }
+
+            this->unresolved_labels.erase(it);
+        }
     }
 }
 bool ParserGlobals::label_exists(const std::string& label)
@@ -184,5 +212,15 @@ void Parser::parse()
             cmd = commands_map.at(rcmd.m_first);
         }
         cmd(rcmd.m_args, rcmd.m_line_idx, this);
+    }
+    
+    if(this->errors.size() > 0){ return; }
+
+    if(this->globals.unresolved_labels.size() > 0)
+    {
+        for(auto& line : this->globals.unresolved_labels)
+        {
+            this->errors.add_end(vmc::UnregistedLabelError(line.m_idx, line.m_data));
+        }
     }
 }

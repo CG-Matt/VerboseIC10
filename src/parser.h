@@ -33,6 +33,7 @@ class ParserGlobals
     public:
         ParserReferences references;
         std::vector<std::string> labels;
+        std::vector<vmc::Line> unresolved_labels;
         std::vector<std::string> errors;
         ConditionalInfo conditional;
 
