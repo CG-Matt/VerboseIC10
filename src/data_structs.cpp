@@ -120,4 +120,9 @@ namespace vmc
     {
         m_data = "(" + std::to_string(line_index) + ") Insufficient arguments provided. Got " + std::to_string(recieved) + ", expected " + std::to_string(expected) + ".";
     }
+
+    UnregistedLabelError::UnregistedLabelError(uint16_t line_index, std::string label_name)
+    {
+        m_data = "(" + std::to_string(line_index) + ") Unregistered label \"" + label_name + "\" called";
+    }
 }

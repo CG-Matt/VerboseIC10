@@ -72,4 +72,10 @@ namespace vmc
         public:
             InsufficientArgsError(uint16_t line_index, uint16_t recieved, uint16_t expected);
     };
+
+    class UnregistedLabelError : public ErrorTemplate
+    {
+        public:
+            UnregistedLabelError(uint16_t line_index, std::string label_name);
+    };
 }
