@@ -80,4 +80,10 @@ namespace vmc
         public:
             UnregistedLabelError(uint16_t line_index, std::string label_name);
     };
+
+    class InvalidMathOpError : public ErrorTemplate
+    {
+        public:
+            InvalidMathOpError(uint16_t line_index, std::string operation);
+    };
 }

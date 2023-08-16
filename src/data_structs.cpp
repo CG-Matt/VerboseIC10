@@ -142,4 +142,9 @@ namespace vmc
     {
         m_data = "(" + std::to_string(line_index) + ") Unregistered label \"" + label_name + "\" called";
     }
+
+    InvalidMathOpError::InvalidMathOpError(uint16_t line_index, std::string operation)
+    {
+        m_data = "(" + std::to_string(line_index) + ") Invalid math operation token \"" + operation + "\"";
+    }
 }
