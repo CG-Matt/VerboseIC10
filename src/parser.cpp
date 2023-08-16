@@ -1,6 +1,6 @@
+#include <string>
 #include <vector>
 #include <algorithm>
-#include <string>
 #include "data_structs.h"
 #include "commands.h"
 #include "parser.h"
