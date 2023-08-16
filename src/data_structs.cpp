@@ -34,6 +34,17 @@ namespace vmc
 
     /*Checks if the array length != 0*/
     bool string_array::contains_data(){ return m_data.size() > 0; }
+    /*
+        Returns the index of an element in an array.
+        Returns "-1" if the element is not found. 
+    */
+    int32_t string_array::get_idx(const std::string& search_string) const
+    {
+        auto it = std::find(m_data.begin(), m_data.end(), search_string);
+        if(it == m_data.end()){ return -1; }
+        
+        return it - m_data.begin();
+    }
     /*Checks if the array contains the seach_string*/
     bool string_array::includes(const std::string& search_string) const
     {
@@ -102,6 +113,12 @@ namespace vmc
     void string_array::add_begin(const std::string& data)
     {
         m_data.insert(m_data.begin(), data);
+    }
+
+    /*Removes the data from the array at the index specified*/
+    void string_array::remove(uint32_t idx)
+    {
+        m_data.erase(m_data.begin() + idx);
     }
 
 

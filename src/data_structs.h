@@ -43,6 +43,7 @@ namespace vmc
         void reserve(size_t size);
 
         bool contains_data();
+        int32_t get_idx(const std::string& search_string) const;
         bool includes(const std::string& search_string) const;
         std::string shift();
         std::string& v_shift();
@@ -50,6 +51,7 @@ namespace vmc
         std::string join(std::string delim);
         void add_end(const std::string& data);
         void add_begin(const std::string& data);
+        void remove(uint32_t idx);
     };
 
     class ErrorTemplate
