@@ -1,0 +1,155 @@
+$ This is a comment. Any line beginning with a "$" will be treated like a comment
+
+
+$ This is a directive.
+$ The version directive lets the comiler know version of VIC10 we are using.
+#version 4
+
+
+
+$ This is the only other currently implemented directive.
+$ It informs the compiler that we want to use the carry module
+$ which gives us access to the carry register in our code
+$ most commonly used by the "trans" command.
+#using carry
+
+
+
+$ The reg command lets us define registers for later use.
+$ We can assign one at a time -> reg example_register
+$ Or provide an array -> reg [example_reg1, example_reg2, ...]
+$ The amount of registers is limited to the amount specified in the "parser.config" file.
+reg [ counter, var1 ]
+
+
+
+$ The dev command lets us define external devices that we will be calling.
+$ We can assign one at a time -> dev d0 example_device
+$ Or provice an array -> dev * = [ example_device1, example_device2, ... ]
+$ The amount of devices is limited to the amount specified in the "parser.config" file.
+$ Defining devices using the array method also sets the parsers "devices_initialised" flag
+$ which will cause the program to error if you try to define any more devices.
+dev * = [ computer, vending_machine ]
+
+
+
+$ Labels allow you to jump execution points by going to them using the jump or branch commands
+label reset
+
+
+$ DEPRICATED
+$ The set command lets you change the value of a register
+set counter = 0
+
+
+$ You can just use the name of the variable without set to change the value of a register
+counter = 1
+
+
+
+label main
+
+
+
+$ xref lets you load a value from an external device variable into a register
+$ or write the value from a register or a const to a device variable.
+$ It replaces the now depricated "export" and "import" commands
+
+$ Loading the var1 register with the value of computer.PrefabHash
+xref computer.PrefabHash -> var1
+
+$ We can also export to all conected devices with the same PrefabHash by using the PrefabHash as an export destination prefixed with a "*"
+$ The following code will export 10 to the Setting variable of all connected computers
+$ "*var1" tells the compiler to use var1 as a PrefabHash. It is up to the user to previosly load the desired PrefabHash into the register.
+$ In this code it is done by the above command
+xref *var1.Setting <- 10
+
+$ Loading the vending_machine.Setting variable with the value of var1
+xref vending_machine.Setting <- var1
+
+$ Loading the Self.Setting variable with a const value
+$ NOTE: Self is a device definition refering to the unit executing the commands
+xref Self.Setting <- 10
+
+
+
+$ DEPRICATED
+$ import lets you load a value from an external device variable into a register
+import var1 = computer.PrefabHash
+
+
+
+$ DEPRICATED
+$ export lets you write the value from a register or a const to a device variable.
+export vending_machine.Setting = counter
+
+
+
+$ trans lets you transfer a variable's data from one device to another without the need to xref in and out.
+$ This command requires the carry module to be active.
+$ NOTE: Internally trans is still an xref in and xref out command. Its purpose is simply to make code cleaner.
+trans vending_machine.Setting => computer.Setting
+
+
+
+$ math is used to perform +,-,* and / operations on variables
+$ You can write the output of a math operation back to the register used in the equation
+math counter = counter + 10
+
+
+
+$ jump moves the point of execution to a defined label
+jump => small_skip
+
+$ this code will not be run as we are jumping over it
+counter = 100
+
+label small_skip
+
+
+
+$ branch lets us jump to defined label if a specified condition is met.
+$ the if statement of the branch command can take registers or consts as inputs.
+$ the following branch will jump to the main label as long as the "counter" register is less than 20.
+branch => main if counter < 20
+
+
+
+$ The wait command pauses execution for a defined amount of time
+$ If no time is supplied execution is paused for 1 tick
+$ If a time is specified execution is paused for x seconds.
+wait 4
+
+
+
+$ POTENTIALLY BUGGY PLEASE AVOID USING
+$ move lets up jump forward or backward a specified number of lines with or without a condition.
+$ Positive line numbers result in a jump forward and negative in a jump backward.
+$ As more complex code can take up multiple lines of output code compared to the source code,
+$ I would not advise using this, as it can result in unexpected behaviour.
+$ Unconditionally jump 0 lines.
+move 0
+
+$ Jump back 2 lines if counter < 20
+move -2 if counter < 20
+
+
+
+label end_loop
+
+
+
+$ The if, else and end commands let us set up conditionals without the need for sue to manually set up multiple branches and labels.
+$ This if statement will set the Setting variable of the computer to its PrefabHash if var1 is not equal to 0 and counter > 20
+$ If not it will add 10 to the counter
+$ The end command is used to specify the end of the if statement
+if var1 != 0 and counter > 20
+    trans computer.PrefabHash => computer.Setting
+else
+    math counter = counter + 10
+end
+
+$ If commands do not require an else statement and will work without one
+if counter < 20
+    jump => end_loop
+end
