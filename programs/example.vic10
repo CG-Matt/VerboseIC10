@@ -47,6 +47,12 @@ counter = 1
 
 
 
+$ The const command lets up define constants which we can use throughout our program.
+$ As they are evaluated at compile time and do not change they don't take up a register.
+const example_constant = 100
+
+
+
 label main
 
 

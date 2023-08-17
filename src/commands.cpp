@@ -317,6 +317,17 @@ namespace c_commands
         device = parser->globals.references.get(device);
         parser->output.add_end(ins::s(device, variable, reg));
     }
+    void p_const(vmc::string_array& args, const uint16_t& idx, Parser* parser)
+    {
+        // Const will create a reference to a value without using a register
+        if(args.size() < 3){ parser->errors.add_end(vmc::InsufficientArgsError(idx, args.size(), 3)); return; }
+        
+        std::string& const_name = args.v_shift();
+        args.v_shift();
+        std::string& value = args.v_shift();
+
+        parser->globals.references.add(const_name, value, ParserReferences::ref_type::constant);
+    }
 };
 
 std::unordered_map<std::string, cmd_func> commands_map =
@@ -336,5 +347,6 @@ std::unordered_map<std::string, cmd_func> commands_map =
     { "if", c_commands::p_if },
     { "else", c_commands::p_else },
     { "end", c_commands::end },
-    { "xref", c_commands::xref }
+    { "xref", c_commands::xref },
+    { "const", c_commands::p_const }
 };

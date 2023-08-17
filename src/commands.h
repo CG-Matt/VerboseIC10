@@ -26,6 +26,7 @@ namespace c_commands
     void p_else(vmc::string_array& args, const uint16_t& idx, Parser* parser);
     void end(vmc::string_array& args, const uint16_t& idx, Parser* parser);
     void xref(vmc::string_array& args, const uint16_t& idx, Parser* parser);
+    void p_const(vmc::string_array& args, const uint16_t& idx, Parser* parser);
 };
 
 extern std::unordered_map<std::string, cmd_func> commands_map;
