@@ -8,8 +8,12 @@ namespace vmc
 {
     /*Access to internal vectors begin iterator*/
     std::vector<std::string>::iterator string_array::begin(){ return m_data.begin(); }
+    /*Access to internal vectors begin iterator*/
+    std::vector<std::string>::const_iterator string_array::begin() const { return m_data.begin(); }
     /*Access to internal vectors end iterator*/
     std::vector<std::string>::iterator string_array::end(){ return m_data.end(); }
+    /*Access to internal vectors end iterator*/
+    std::vector<std::string>::const_iterator string_array::end() const { return m_data.end(); }
     /*Access to internal vectors size*/
     std::size_t string_array::size(){ return m_data.size(); }
 
@@ -28,12 +32,12 @@ namespace vmc
     }
 
     /*Returns the array's index offset*/
-    uint32_t string_array::get_offset(){ return m_offset; }
+    uint32_t string_array::get_offset() const { return m_offset; }
     /*Preallocate space for the internal vector*/
     void string_array::reserve(size_t size){ m_data.reserve(size); }
 
     /*Checks if the array length != 0*/
-    bool string_array::contains_data(){ return m_data.size() > 0; }
+    bool string_array::contains_data() const { return m_data.size() > 0; }
     /*
         Returns the index of an element in an array.
         Returns "-1" if the element is not found. 
@@ -81,6 +85,14 @@ namespace vmc
         return data;
     }
 
+    /*
+        Returns a string_array_view of the array.
+        As views allow direct access to the array's data they are not const.
+    */
+    vmc::string_array_view string_array::make_view()
+    {
+        return vmc::string_array_view{m_data.begin(), m_data.end()};
+    }
     /*
         Returns a string_array_view starting at the internal offset.
         As views allow direct access to the array's data they are not const.
