@@ -11,8 +11,8 @@ namespace c_commands
 {
     void dev(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        if(parser->flags.devices_initialised == true){ parser->errors.add_end(vmc::GenericError(idx, "Devices have already been initialised")); return; }
-        if(parser->flags.available_devices <= 0){ parser->errors.add_end(vmc::GenericError(idx, "Max device limit reached")); return; }
+        if(parser->flags.devices_initialised == true){ parser->set_error(vmc::GenericError(idx, "Devices have already been initialised")); return; }
+        if(parser->flags.available_devices <= 0){ parser->set_error(vmc::GenericError(idx, "Max device limit reached")); return; }
         
         std::string& selector = args.v_shift();
         args.v_shift();
@@ -31,7 +31,7 @@ namespace c_commands
             bool arr_error;
             vmc::string_array arr = parse_array(args.make_offset_view(), arr_error);
             if(arr_error){ parser->errors.add_end(vmc::GenericError(idx, arr[0])); return; }
-            if(arr.size() > 6){ parser->errors.add_end(vmc::GenericError(idx, "Too many devices listed. (" + std::to_string(arr.size()) + "/6)")); return; }
+            if(arr.size() > 6){ parser->set_error(vmc::GenericError(idx, "Too many devices listed. (" + std::to_string(arr.size()) + "/6)")); return; }
             for(int i = 0; i < arr.size(); i++)
             {
                 parser->globals.references.add(arr[i], available_devices[i], ParserReferences::ref_type::dev);
@@ -39,11 +39,11 @@ namespace c_commands
             return;
         }
 
-        parser->errors.add_end(vmc::GenericError(idx, "Device assignment error"));
+        parser->set_error(vmc::GenericError(idx, "Device assignment error"));
     }
     void reg(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        if(!args.contains_data()){ parser->errors.add_end(vmc::GenericError(idx, "Register names not provided")); return; }
+        if(!args.contains_data()){ parser->set_error(vmc::GenericError(idx, "Register names not provided")); return; }
         std::string& first = args.v_shift();
         if(starts_with(first, "["))
         {
@@ -74,7 +74,7 @@ namespace c_commands
     void label(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         std::string& name = args.v_shift();
-        if(name.size() < 1){ parser->errors.add_end(vmc::GenericError(idx, "Label name required")); return; }
+        if(name.size() < 1){ parser->set_error(vmc::GenericError(idx, "Label name required")); return; }
         parser->globals.register_label(name);
 
         parser->output.add_end(ins::label(name));
@@ -144,7 +144,7 @@ namespace c_commands
         }
         else
         {
-            parser->errors.add_end(vmc::InvalidMathOpError(idx, set_op));
+            parser->set_error(vmc::InvalidMathOpError(idx, set_op));
             return;
         }
 
@@ -152,7 +152,7 @@ namespace c_commands
         var1 = parse_value(var1, parser->globals);
         var2 = parse_value(var2, parser->globals);
 
-        if(operations.find(op) == operations.end()){ parser->errors.add_end(vmc::InvalidMathOpError(idx, op)); return; }
+        if(operations.find(op) == operations.end()){ parser->set_error(vmc::InvalidMathOpError(idx, op)); return; }
         op = operations.at(op);
 
         parser->output.add_end(ins::math(op, reg, var1, var2));
@@ -199,7 +199,7 @@ namespace c_commands
     }
     void trans(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        if(!parser->flags.using_carry){ parser->errors.add_end(vmc::GenericError(idx, "You must specify the use of carry to use the trans command (#using carry)")); return; }
+        if(!parser->flags.using_carry){ parser->set_error(vmc::GenericError(idx, "You must specify the use of carry to use the trans command (#using carry)")); return; }
 
         std::string& source = args.v_shift();
         args.v_shift();
@@ -249,7 +249,7 @@ namespace c_commands
             value = parse_value(value, parser->globals);
             if(invert_comparator.find(comparator) == invert_comparator.end())
             {
-                parser->errors.add_end(vmc::GenericError(idx, "Unexpected comparator symbol \"" + comparator + "\""));
+                parser->set_error(vmc::GenericError(idx, "Invalid comparator symbol \"" + comparator + "\""));
                 return;
             }
             comparator = invert_comparator.at(comparator);
@@ -266,7 +266,7 @@ namespace c_commands
     }
     void p_else(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        if(!parser->flags.in_conditional){ parser->errors.add_end(vmc::GenericError(idx, "Conditional not initialised correctly")); return; }
+        if(!parser->flags.in_conditional){ parser->set_error(vmc::GenericError(idx, "Conditional not initialised correctly")); return; }
 
         List list;
         parser->flags.is_conditional_else = true;
@@ -278,7 +278,7 @@ namespace c_commands
     }
     void end(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        if(!parser->flags.in_conditional){ parser->errors.add_end(vmc::GenericError(idx, "Conditional not initialised correctly")); return; }
+        if(!parser->flags.in_conditional){ parser->set_error(vmc::GenericError(idx, "Conditional not initialised correctly")); return; }
 
         if(parser->flags.is_conditional_else == false){ parser->output.add_end(ins::label(parser->globals.conditional.fail_label)); return; }
 
@@ -287,13 +287,13 @@ namespace c_commands
     }
     void xref(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        if(args.size() < 3){ parser->errors.add_end(vmc::InsufficientArgsError(idx, args.size(), 3)); return; }
+        if(args.size() < 3){ parser->set_error(vmc::InsufficientArgsError(idx, args.size(), 3)); return; }
         std::string& target = args.v_shift();
         auto dv_arr = split_string(target, '.');
         std::string& device = dv_arr[0];
         std::string& variable = dv_arr[1];
         std::string& direction = args.v_shift();
-        if(direction != "<-" && direction != "->"){ parser->errors.add_end(vmc::GenericError(idx, "Invalid direction \"" + direction + "\" provided")); return; }
+        if(direction != "<-" && direction != "->"){ parser->set_error(vmc::GenericError(idx, "Invalid direction \"" + direction + "\" provided")); return; }
         std::string& reg = args.v_shift();
 
         if(direction == "->")
@@ -320,7 +320,7 @@ namespace c_commands
     void p_const(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         // Const will create a reference to a value without using a register
-        if(args.size() < 3){ parser->errors.add_end(vmc::InsufficientArgsError(idx, args.size(), 3)); return; }
+        if(args.size() < 3){ parser->set_error(vmc::InsufficientArgsError(idx, args.size(), 3)); return; }
         
         std::string& const_name = args.v_shift();
         args.v_shift();

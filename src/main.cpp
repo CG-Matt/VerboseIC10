@@ -33,10 +33,10 @@ int main(int argc, char **argv)
     if(write_err > 0){ std::cout << "Error writing to file"; }
 
     // Always log errors if present
-    if(parser.errors.size() > 0)
+    if(parser.has_error())
     {
         std::cout << "ERRORS:" << std::endl;
-        for(auto& err : parser.errors)
+        for(auto& err : parser.get_errors())
         {
             std::cout << "   - " + err << std::endl;
         }

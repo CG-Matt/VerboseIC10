@@ -250,12 +250,12 @@ void Parser::p_parse_directives()
 
         if(cur_directive == "version")
         {
-            if(!args.contains_data()){ errors.add_end(vmc::GenericError(rdirective.m_line_idx, "No version number provided")); continue; }
+            if(!args.contains_data()){ this->set_error(vmc::GenericError(rdirective.m_line_idx, "No version number provided")); continue; }
             flags.version = std::stoi(args[0]);
         }
         if(cur_directive == "using")
         {
-            if(!args.contains_data()){ errors.add_end(vmc::GenericError(rdirective.m_line_idx, "No module name provided")); continue; }
+            if(!args.contains_data()){ this->set_error(vmc::GenericError(rdirective.m_line_idx, "No module name provided")); continue; }
             std::string &feature = args[0];
 
             if(feature == "carry")
@@ -276,15 +276,16 @@ void Parser::parse()
     // Calling each command in the file
     for( auto &rcmd : m_input)
     {
-        if(this->errors.size() > 0){ break; }
+        if(this->has_error()){ break; }
 
         cmd_func cmd;
 
+        this->m_current_line = rcmd.m_line_idx;
         if(rcmd.m_first.size() < 1){ continue; }
         if(commands_map.find(rcmd.m_first) == commands_map.end())
         {
-            if(!this->globals.references.defined_registers.includes(rcmd.m_first)){ this->errors.add_end(vmc::GenericError(rcmd.m_line_idx, "Command \"" + rcmd.m_first + "\" is not a valid command")); continue; }
-            if(commands_map.find("set") == commands_map.end()){ this->errors.add_end(vmc::GenericError(rcmd.m_line_idx, "Call to set command from parser errored")); continue; } // Hopefully will prevent crashes if set is ever removed
+            if(!this->globals.references.defined_registers.includes(rcmd.m_first)){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Command \"" + rcmd.m_first + "\" is not a valid command")); continue; }
+            if(commands_map.find("set") == commands_map.end()){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Call to set command from parser errored")); continue; } // Hopefully will prevent crashes if set is ever removed
             
             rcmd.m_args.add_begin(rcmd.m_first);
             cmd = commands_map.at("set");
@@ -296,13 +297,13 @@ void Parser::parse()
         cmd(rcmd.m_args, rcmd.m_line_idx, this);
     }
     
-    if(this->errors.size() > 0){ return; }
+    if(this->has_error()){ return; }
 
     if(this->globals.unresolved_labels.size() > 0)
     {
         for(auto& line : this->globals.unresolved_labels)
         {
-            this->errors.add_end(vmc::UnregistedLabelError(line.m_idx, line.m_data));
+            this->set_error(vmc::UnregistedLabelError(line.m_idx, line.m_data));
         }
     }
 }
