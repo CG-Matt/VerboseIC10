@@ -124,8 +124,90 @@ bool ParserGlobals::label_exists(const std::string& label)
 
 
 
+void ParserUtils::set_parent(Parser* parent){ m_parent = parent; }
+/*
+    Parses the provided device into a name and variable and whether or not it is a PrefabHash.
+    If an error occurs it adds it to m_parent->errors and sets the parsers error flag.
+*/
+Device ParserUtils::parse_device(std::string& device_in)
+{
+    Device device_out;
+
+    if(starts_with(device_in, "@")) // Alias for PrefabHash
+    {
+        if(includes(device_in, '.'))
+        {
+            m_parent->set_error(vmc::GenericError(m_parent->get_current_line(), "A device cannot have a prefix and a variable name defined. (Excluding * for PrefabHash use)"));
+            return device_out;
+        }
+        device_in.erase(device_in.begin());
+        device_in = m_parent->globals.references.get(device_in);
+        device_out.name = device_in;
+        device_out.variable = "PrefabHash";
+        return device_out;
+    }
+    if(starts_with(device_in, "*")) // Use prefabhash
+    {
+        device_in.erase(device_in.begin());
+        device_out.is_prefabhash = true;
+    }
+
+    /*Check if the device variable requested is valid*/
+    if(!includes(device_in, '.'))
+    {
+        m_parent->set_error(vmc::GenericError(m_parent->get_current_line(), "Inavlid device \"" + device_in + "\""));
+        return device_out;
+    }
+
+    std::vector<std::string> data = split_string(device_in, '.');
+    data[0] = m_parent->globals.references.get(data[0]);
+    device_out.name = data[0];
+    device_out.variable = data[1];
+    return device_out;
+}
+/*
+    Parses the provided string array view into a std::vector<std::string>.
+    If an error occurs it adds it to m_parent->errors and sets the parsers error flag.
+*/
+std::vector<std::string> ParserUtils::parse_array(const vmc::string_array_view& view)
+{
+    std::string line = join_string(view); // Turn the array into a string
+    
+    if(!starts_with(line, "[")) // Return error if first char does not open array
+    {
+        m_parent->set_error(vmc::GenericError(m_parent->get_current_line(), "First character does not open array."));
+        return std::vector<std::string>();
+    }
+
+    if(!includes(line, ']')) // Return error if no array terminator is found
+    {
+        m_parent->set_error(vmc::GenericError(m_parent->get_current_line(), "No array terminator found. \"]\" expected."));
+        return std::vector<std::string>();
+    }
+
+    size_t terminator_idx = line.find_first_of(']');
+    if(terminator_idx != line.size())
+    {
+        line.erase(terminator_idx + 1);
+    }
+
+    line.erase(line.begin());
+    line.erase(line.end() - 1);
+    return split_string(line, ',');
+}
+std::string ParserUtils::parse_value(const std::string& value)
+{
+    if(is_boolean(value)){ return parse_boolean(value); }
+    if(is_reference(value)){ return m_parent->globals.references.get(value); }
+    return value;
+}
+
+
+
 Parser::Parser(std::vector<vmc::Line> &file_contents)
 {
+    // Initialise utils
+    this->utils.set_parent(this);
     // Initialise globals
     p_init_globals();
     // Parse file
@@ -224,3 +306,15 @@ void Parser::parse()
         }
     }
 }
+/*Returns the current line number*/
+uint16_t Parser::get_current_line() const { return m_current_line; }
+/*Adds the provided error to the errors list and sets the has_error flag.*/
+void Parser::set_error(std::string error)
+{
+    this->errors.add_end(error);
+    this->flags.has_error = true;
+}
+/*Returns the state of the parsers has_error flag.*/
+bool Parser::has_error() const { return this->flags.has_error; }
+/*Returns a read only reference to the errors.*/
+const vmc::string_array& Parser::get_errors() const { return this->errors; }

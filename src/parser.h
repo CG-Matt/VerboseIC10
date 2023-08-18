@@ -45,6 +45,7 @@ class ParserGlobals
 
 struct ParserFlags
 {
+    bool has_error = false;
     bool using_carry = false;
     bool devices_initialised = false;
     bool in_conditional = false;
@@ -54,6 +55,21 @@ struct ParserFlags
     short version;
 };
 
+class Parser; // Declaring Parser class for ParserUtils
+
+class ParserUtils
+{
+    private:
+        Parser* m_parent;
+
+    public:
+    
+    void set_parent(Parser* parent);
+    Device parse_device(std::string& device);
+    std::vector<std::string> parse_array(const vmc::string_array_view& view);
+    std::string parse_value(const std::string& value);
+};
+
 class Parser
 {
     public:
@@ -61,10 +77,12 @@ class Parser
         vmc::string_array output;
         ParserGlobals globals;
         ParserFlags flags;
+        ParserUtils utils;
 
     private:
         std::vector<ProgramLine> m_directives;
         std::vector<ProgramLine> m_input;
+        uint16_t m_current_line;
 
     public:
 
@@ -79,4 +97,8 @@ class Parser
     public:
 
     void parse();
+    uint16_t get_current_line() const;
+    void set_error(std::string error);
+    bool has_error() const;
+    const vmc::string_array& get_errors() const;
 };
