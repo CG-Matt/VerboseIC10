@@ -12,6 +12,7 @@ std::vector<std::string> split_string(const std::string& str, char delim)
     std::stringstream line_stream(str);
     std::string segment;
     std::vector<std::string> out;
+    if(std::find(str.begin(), str.end(), delim) == str.end()){ out.push_back(str); return out; }
 
     while(std::getline(line_stream, segment, delim))
     {
@@ -77,62 +78,6 @@ bool includes(const std::string& data, char search_char)
     return true;
 }
 
-std::vector<std::string> parse_array(const std::vector<std::string>& data, bool& error)
-{
-    std::string line = join_string(data); // Turn the array into a string
-    
-    if(!starts_with(line, "[")) // Return error if first char does not open array
-    {
-        error = true;
-        return std::vector<std::string>{"First character does not open array."};
-    }
-
-    if(!includes(line, ']')) // Return error if no array terminator is found
-    {
-        error = true;
-        return std::vector<std::string>{"No array terminator found. \"]\" expected."};
-    }
-
-    size_t terminator_idx = line.find_first_of(']');
-    if(terminator_idx != line.size())
-    {
-        line.erase(terminator_idx + 1);
-    }
-
-    error = false;
-    line.erase(line.begin());
-    line.erase(line.end() - 1);
-    return split_string(line, ',');
-}
-
-std::vector<std::string> parse_array(const vmc::string_array_view& view, bool& error)
-{
-    std::string line = join_string(view); // Turn the array into a string
-    
-    if(!starts_with(line, "[")) // Return error if first char does not open array
-    {
-        error = true;
-        return std::vector<std::string>{"First character does not open array."};
-    }
-
-    if(!includes(line, ']')) // Return error if no array terminator is found
-    {
-        error = true;
-        return std::vector<std::string>{"No array terminator found. \"]\" expected."};
-    }
-
-    size_t terminator_idx = line.find_first_of(']');
-    if(terminator_idx != line.size())
-    {
-        line.erase(terminator_idx + 1);
-    }
-
-    error = false;
-    line.erase(line.begin());
-    line.erase(line.end() - 1);
-    return split_string(line, ',');
-}
-
 bool is_number(const std::string& str)
 {
     bool is_int = str.find_first_not_of("0123456789") == std::string::npos;
@@ -173,22 +118,10 @@ std::string parse_boolean(const std::string& variable)
     return "0";
 }
 
-std::string parse_value(const std::string& variable, const ParserGlobals& globals)
-{
-    if(is_boolean(variable)){ return parse_boolean(variable); }
-    if(is_reference(variable)){ return globals.references.get(variable); }
-    return variable;
-}
 
-bool starts_with(const std::string& data, const std::string& segment)
-{
-    return data.rfind(segment, 0) == 0;
-}
+bool starts_with(const std::string& data, const std::string& segment){ return data.rfind(segment, 0) == 0; }
 
-bool ends_with(const std::string& data, const std::string& segment)
-{
-    return data.rfind(segment) == data.size() - segment.size();
-}
+bool ends_with(const std::string& data, const std::string& segment){ return data.rfind(segment) == data.size() - segment.size(); }
 
 std::string B_compare(const std::string& comparator, const std::string& reg, const std::string& value, const std::string& label)
 {
