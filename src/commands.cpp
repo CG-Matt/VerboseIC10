@@ -28,9 +28,8 @@ namespace c_commands
         if(selector == "*")
         {
             parser->flags.devices_initialised = true;
-            bool arr_error;
-            vmc::string_array arr = parse_array(args.make_offset_view(), arr_error);
-            if(arr_error){ parser->errors.add_end(vmc::GenericError(idx, arr[0])); return; }
+            vmc::string_array arr = parser->utils.parse_array(args.make_offset_view());
+            if(parser->has_error()){ return; }
             if(arr.size() > 6){ parser->set_error(vmc::GenericError(idx, "Too many devices listed. (" + std::to_string(arr.size()) + "/6)")); return; }
             for(int i = 0; i < arr.size(); i++)
             {
@@ -47,9 +46,8 @@ namespace c_commands
         std::string& first = args.v_shift();
         if(starts_with(first, "["))
         {
-            bool arr_error;
-            vmc::string_array arr = parse_array(args, arr_error);
-            if(arr_error){ parser->errors.add_end(vmc::GenericError(idx, arr[0])); return; }
+            vmc::string_array arr = parser->utils.parse_array(args.make_view());
+            if(parser->has_error()){ return; }
             for(auto &entry : arr)
             {
                 parser->globals.references.add(entry, parser->globals.references.get_free(), ParserReferences::ref_type::reg);
@@ -67,7 +65,7 @@ namespace c_commands
         std::string& value = args.v_shift();
 
         reg = parser->globals.references.get(reg);
-        value = parse_value(value, parser->globals);
+        value = parser->utils.parse_value(value);
 
         parser->output.add_end(ins::move(reg, value));
     }
@@ -81,27 +79,20 @@ namespace c_commands
     }
     void eport(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
-        std::string& target = args.v_shift();
+        Device target = parser->utils.parse_device(args.v_shift());
+        if(parser->has_error()){ return; }
         args.v_shift(); // Discard next token
         std::string& value = args.v_shift();
-        auto dv_arr = split_string(target, '.');
-        std::string device = dv_arr[0];
-        std::string variable = dv_arr[1];
 
-        value = parse_value(value, parser->globals);
+        value = parser->utils.parse_value(value);
 
-        if(starts_with(device, "*"))
+        if(target.is_prefabhash)
         {
-            device.erase(device.begin());
-            device = parser->globals.references.get(device);
-
-            parser->output.add_end(ins::sb(device, variable, value));
+            parser->output.add_end(ins::sb(target.name, target.variable, value));
             return;
         }
 
-        device = parser->globals.references.get(device);
-
-        parser->output.add_end(ins::s(device, variable, value));
+        parser->output.add_end(ins::s(target.name, target.variable, value));
     }
     void wait(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
@@ -149,8 +140,8 @@ namespace c_commands
         }
 
         reg = parser->globals.references.get(reg);
-        var1 = parse_value(var1, parser->globals);
-        var2 = parse_value(var2, parser->globals);
+        var1 = parser->utils.parse_value(var1);
+        var2 = parser->utils.parse_value(var2);
 
         if(operations.find(op) == operations.end()){ parser->set_error(vmc::InvalidMathOpError(idx, op)); return; }
         op = operations.at(op);
@@ -170,15 +161,12 @@ namespace c_commands
     {
         std::string& reg = args.v_shift();
         args.v_shift(); // Discard next token
-        std::string& target = args.v_shift();
-        auto dv_arr = split_string(target, '.');
-        std::string& device = dv_arr[0];
-        std::string& variable = dv_arr[1];
+        Device target = parser->utils.parse_device(args.v_shift());
+        if(parser->has_error()){ return; }
 
         reg = parser->globals.references.get(reg);
-        device = parser->globals.references.get(device);
 
-        parser->output.add_end(ins::l(reg, device, variable));
+        parser->output.add_end(ins::l(reg, target.name, target.variable));
     }
     void branch(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
@@ -192,8 +180,8 @@ namespace c_commands
         std::string& compare = args.v_shift();
         std::string& var2 = args.v_shift();
 
-        var1 = parse_value(var1, parser->globals);
-        var2 = parse_value(var2, parser->globals);
+        var1 = parser->utils.parse_value(var1);
+        var2 = parser->utils.parse_value(var2);
 
         parser->output.add_end(B_compare(compare, var1, var2, label));
     }
@@ -201,29 +189,26 @@ namespace c_commands
     {
         if(!parser->flags.using_carry){ parser->set_error(vmc::GenericError(idx, "You must specify the use of carry to use the trans command (#using carry)")); return; }
 
-        std::string& source = args.v_shift();
+        Device source = parser->utils.parse_device(args.v_shift());
+        if(parser->has_error()){ return; }
+
         args.v_shift();
-        std::string& destination = args.v_shift();
-        auto sdv_arr = split_string(source, '.');
-        std::string& s_device = sdv_arr[0];
-        std::string& s_variable = sdv_arr[1];
-        auto ddv_arr = split_string(destination, '.');
-        std::string& d_device = ddv_arr[0];
-        std::string& d_variable = ddv_arr[1];
+
+        Device destination = parser->utils.parse_device(args.v_shift());
+        if(parser->has_error()){ return; }
 
         std::string eport;
 
-        if(starts_with(d_device, "*"))
+        if(destination.is_prefabhash)
         {
-            d_device.erase(d_device.begin());
-            eport = ins::sb(parser->globals.references.get(d_device), d_variable, parser->globals.references.get("carry"));
+            eport = ins::sb(destination.name, destination.variable, parser->globals.references.get("carry"));
         }
         else
         {
-            eport = ins::s(parser->globals.references.get(d_device), d_variable, parser->globals.references.get("carry"));
+            eport = ins::s(destination.name, destination.variable, parser->globals.references.get("carry"));
         }
 
-        std::string eport2 = ins::l(parser->globals.references.get("carry"), parser->globals.references.get(s_device), s_variable);
+        std::string eport2 = ins::l(parser->globals.references.get("carry"), source.name, source.variable);
 
         parser->output.add_end(eport2 + "\n" + eport);
     }
@@ -246,7 +231,7 @@ namespace c_commands
             if(reg.size() < 1 || comparator.size() < 1 || value.size() < 1){ break; }
 
             reg = parser->globals.references.get(reg);
-            value = parse_value(value, parser->globals);
+            value = parser->utils.parse_value(value);
             if(invert_comparator.find(comparator) == invert_comparator.end())
             {
                 parser->set_error(vmc::GenericError(idx, "Invalid comparator symbol \"" + comparator + "\""));
@@ -288,10 +273,10 @@ namespace c_commands
     void xref(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
         if(args.size() < 3){ parser->set_error(vmc::InsufficientArgsError(idx, args.size(), 3)); return; }
-        std::string& target = args.v_shift();
-        auto dv_arr = split_string(target, '.');
-        std::string& device = dv_arr[0];
-        std::string& variable = dv_arr[1];
+        
+        Device target = parser->utils.parse_device(args.v_shift());
+        if(parser->has_error()){ return; }
+        
         std::string& direction = args.v_shift();
         if(direction != "<-" && direction != "->"){ parser->set_error(vmc::GenericError(idx, "Invalid direction \"" + direction + "\" provided")); return; }
         std::string& reg = args.v_shift();
@@ -299,23 +284,19 @@ namespace c_commands
         if(direction == "->")
         {
             reg = parser->globals.references.get(reg);
-            device = parser->globals.references.get(device);
-            parser->output.add_end(ins::l(reg, device, variable));
+            parser->output.add_end(ins::l(reg, target.name, target.variable));
             return;
         }
         // else direction == "<-"
 
-        reg = parse_value(reg, parser->globals);
-        if(starts_with(device, "*"))
+        reg = parser->utils.parse_value(reg);
+        if(target.is_prefabhash)
         {
-            device.erase(device.begin());
-            device = parser->globals.references.get(device);
-            parser->output.add_end(ins::sb(device, variable, reg));
+            parser->output.add_end(ins::sb(target.name, target.variable, reg));
             return;
         }
 
-        device = parser->globals.references.get(device);
-        parser->output.add_end(ins::s(device, variable, reg));
+        parser->output.add_end(ins::s(target.name, target.variable, reg));
     }
     void p_const(vmc::string_array& args, const uint16_t& idx, Parser* parser)
     {
