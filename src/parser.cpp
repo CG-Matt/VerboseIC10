@@ -281,7 +281,6 @@ void Parser::parse()
         cmd_func cmd;
 
         this->m_current_line = rcmd.m_line_idx;
-        if(rcmd.m_first.size() < 1){ continue; }
         if(commands_map.find(rcmd.m_first) == commands_map.end())
         {
             if(!this->globals.references.defined_registers.includes(rcmd.m_first)){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Command \"" + rcmd.m_first + "\" is not a valid command")); continue; }
@@ -312,10 +311,10 @@ uint16_t Parser::get_current_line() const { return m_current_line; }
 /*Adds the provided error to the errors list and sets the has_error flag.*/
 void Parser::set_error(std::string error)
 {
-    this->errors.add_end(error);
+    this->m_errors.add_end(error);
     this->flags.has_error = true;
 }
 /*Returns the state of the parsers has_error flag.*/
 bool Parser::has_error() const { return this->flags.has_error; }
 /*Returns a read only reference to the errors.*/
-const vmc::string_array& Parser::get_errors() const { return this->errors; }
+const vmc::string_array& Parser::get_errors() const { return this->m_errors; }

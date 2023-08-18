@@ -73,13 +73,13 @@ class ParserUtils
 class Parser
 {
     public:
-        vmc::string_array errors;
         vmc::string_array output;
         ParserGlobals globals;
         ParserFlags flags;
         ParserUtils utils;
 
     private:
+        vmc::string_array m_errors;
         std::vector<ProgramLine> m_directives;
         std::vector<ProgramLine> m_input;
         uint16_t m_current_line;
