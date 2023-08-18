@@ -21,6 +21,13 @@ struct ProgramLine
     ProgramLine(const std::string& line, uint16_t line_idx);
 };
 
+struct Device
+{
+    std::string name;
+    std::string variable;
+    bool is_prefabhash = false;
+};
+
 class List
 {
     private:
