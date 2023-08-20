@@ -159,4 +159,14 @@ namespace vmc
     {
         m_data = "(" + std::to_string(line_index) + ") Invalid math operation token \"" + operation + "\"";
     }
+
+    UndefinedRegisterError::UndefinedRegisterError(uint16_t line_index, std::string register_name)
+    {
+        m_data = "(" + std::to_string(line_index) + ") Undefined register \"" + register_name + "\" called.";
+    }
+
+    UndefinedDeviceError::UndefinedDeviceError(uint16_t line_index, std::string device_name)
+    {
+        m_data = "(" + std::to_string(line_index) + ") Undefined device name \"" + device_name + "\" used.";
+    }
 }

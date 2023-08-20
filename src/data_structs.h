@@ -89,4 +89,16 @@ namespace vmc
         public:
             InvalidMathOpError(uint16_t line_index, std::string operation);
     };
+
+    class UndefinedRegisterError : public ErrorTemplate
+    {
+        public:
+            UndefinedRegisterError(uint16_t line_index, std::string register_name);
+    };
+
+    class UndefinedDeviceError : public ErrorTemplate
+    {
+        public:
+            UndefinedDeviceError(uint16_t line_index, std::string device_name);
+    };
 }
