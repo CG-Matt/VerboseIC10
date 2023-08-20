@@ -149,7 +149,7 @@ label end_loop
 
 
 
-$ The if, else and end commands let us set up conditionals without the need for sue to manually set up multiple branches and labels.
+$ The if, else and end commands let us set up conditionals without the need for us to manually set up multiple branches and labels.
 $ This if statement will set the Setting variable of the computer to its PrefabHash if var1 is not equal to 0 and counter > 20
 $ If not it will add 10 to the counter
 $ The end command is used to specify the end of the if statement
