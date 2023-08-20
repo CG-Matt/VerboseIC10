@@ -64,7 +64,7 @@ namespace c_commands
         args.v_shift(); // Discard next token
         std::string& value = args.v_shift();
 
-        reg = parser->globals.references.get(reg);
+        reg = parser->get_ref(reg);
         value = parser->utils.parse_value(value);
 
         parser->output.add_end(ins::move(reg, value));
@@ -111,7 +111,7 @@ namespace c_commands
         std::string& compare = args.v_shift();
         std::string& value = args.v_shift();
 
-        reg = parser->globals.references.get(reg);
+        reg = parser->get_ref(reg);
         parser->output.add_end(BR_compare(compare, reg, value, lines));
     }
     void math(vmc::string_array& args, const uint16_t& idx, Parser* parser)
@@ -139,7 +139,7 @@ namespace c_commands
             return;
         }
 
-        reg = parser->globals.references.get(reg);
+        reg = parser->get_ref(reg);
         var1 = parser->utils.parse_value(var1);
         var2 = parser->utils.parse_value(var2);
 
@@ -164,7 +164,7 @@ namespace c_commands
         Device target = parser->utils.parse_device(args.v_shift());
         if(parser->has_error()){ return; }
 
-        reg = parser->globals.references.get(reg);
+        reg = parser->get_ref(reg);
 
         parser->output.add_end(ins::l(reg, target.name, target.variable));
     }
@@ -201,14 +201,14 @@ namespace c_commands
 
         if(destination.is_prefabhash)
         {
-            eport = ins::sb(destination.name, destination.variable, parser->globals.references.get("carry"));
+            eport = ins::sb(destination.name, destination.variable, parser->get_ref("carry"));
         }
         else
         {
-            eport = ins::s(destination.name, destination.variable, parser->globals.references.get("carry"));
+            eport = ins::s(destination.name, destination.variable, parser->get_ref("carry"));
         }
 
-        std::string eport2 = ins::l(parser->globals.references.get("carry"), source.name, source.variable);
+        std::string eport2 = ins::l(parser->get_ref("carry"), source.name, source.variable);
 
         parser->output.add_end(eport2 + "\n" + eport);
     }
@@ -230,7 +230,7 @@ namespace c_commands
             value = args.shift();
             if(reg.size() < 1 || comparator.size() < 1 || value.size() < 1){ break; }
 
-            reg = parser->globals.references.get(reg);
+            reg = parser->get_ref(reg);
             value = parser->utils.parse_value(value);
             if(invert_comparator.find(comparator) == invert_comparator.end())
             {
@@ -283,7 +283,7 @@ namespace c_commands
 
         if(direction == "->")
         {
-            reg = parser->globals.references.get(reg);
+            reg = parser->get_ref(reg);
             parser->output.add_end(ins::l(reg, target.name, target.variable));
             return;
         }
