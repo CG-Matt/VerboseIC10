@@ -28,10 +28,6 @@ int main(int argc, char **argv)
     Parser parser(file_contents);
     parser.parse();
 
-    // Export file
-    int write_err = write_file(config.out_folder_path, file_name, parser.output);
-    if(write_err > 0){ std::cout << "Error writing to file"; }
-
     // Always log errors if present
     if(parser.has_error())
     {
@@ -43,6 +39,10 @@ int main(int argc, char **argv)
 
         return 1;
     }
+
+    // Export file
+    int write_err = write_file(config.out_folder_path, file_name, parser.output);
+    if(write_err > 0){ std::cout << "Error writing to file"; }
 
     // Log data if required
     if(config.log_ref_table)
