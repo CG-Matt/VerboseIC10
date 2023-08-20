@@ -61,8 +61,12 @@ $ xref lets you load a value from an external device variable into a register
 $ or write the value from a register or a const to a device variable.
 $ It replaces the now depricated "export" and "import" commands
 
-$ Loading the var1 register with the value of computer.PrefabHash
-xref computer.PrefabHash -> var1
+$ Loading the var1 register with the value of computer.On
+xref computer.On -> var1
+
+$ To make code cleaner instead of using computer.PrefabHash we can also use @computer
+$ This command will load the computers prefabhash into the var1 register
+xref @computer -> var1
 
 $ We can also export to all conected devices with the same PrefabHash by using the PrefabHash as an export destination prefixed with a "*"
 $ The following code will export 10 to the Setting variable of all connected computers
