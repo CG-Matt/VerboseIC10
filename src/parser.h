@@ -23,6 +23,7 @@ class ParserReferences
     enum ref_type : uint8_t{ reg, dev, constant };
 
     void add(const std::string& external_name, const std::string& internal_name, ref_type ref_type);
+    bool exists(const std::string& external_name) const;
     std::string get(const std::string& external_name) const;
     std::string get_ext(const std::string& internal_name) const;
     std::string get_free() const;
@@ -101,4 +102,5 @@ class Parser
     void set_error(std::string error);
     bool has_error() const;
     const vmc::string_array& get_errors() const;
+    std::string get_ref(const std::string& external_name);
 };

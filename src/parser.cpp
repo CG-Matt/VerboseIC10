@@ -24,6 +24,15 @@ void ParserReferences::add(const std::string& external_name, const std::string& 
         this->defined_registers.add_end(external_name);
     }
 }
+/*Checks if a reference with the supplied external name exists*/
+bool ParserReferences::exists(const std::string& external_name) const
+{
+    auto it = std::find_if(m_definitions.begin(), m_definitions.end(), [&external_name](const PReference ref)
+    {
+        return ref.m_external == external_name;
+    });
+    return it != m_definitions.end();
+}
 std::string ParserReferences::get(const std::string& external_name) const
 {
     auto res = std::find_if(m_definitions.begin(), m_definitions.end(), [&external_name](const PReference ref)
@@ -141,8 +150,8 @@ Device ParserUtils::parse_device(std::string& device_in)
             return device_out;
         }
         device_in.erase(device_in.begin());
-        device_in = m_parent->globals.references.get(device_in);
-        device_out.name = device_in;
+        device_out.name = m_parent->globals.references.get(device_in);
+        if(device_out.name.size() < 1){ m_parent->set_error(vmc::UndefinedDeviceError(m_parent->get_current_line(), device_in)); }
         device_out.variable = "PrefabHash";
         return device_out;
     }
@@ -160,8 +169,8 @@ Device ParserUtils::parse_device(std::string& device_in)
     }
 
     std::vector<std::string> data = split_string(device_in, '.');
-    data[0] = m_parent->globals.references.get(data[0]);
-    device_out.name = data[0];
+    device_out.name = m_parent->globals.references.get(data[0]);
+    if(device_out.name.size() < 1){ m_parent->set_error(vmc::UndefinedDeviceError(m_parent->get_current_line(), data[0])); }
     device_out.variable = data[1];
     return device_out;
 }
@@ -198,7 +207,10 @@ std::vector<std::string> ParserUtils::parse_array(const vmc::string_array_view& 
 std::string ParserUtils::parse_value(const std::string& value)
 {
     if(is_boolean(value)){ return parse_boolean(value); }
-    if(is_reference(value)){ return m_parent->globals.references.get(value); }
+    if(is_number(value)){ return value; }
+    if(m_parent->globals.references.exists(value)){ return m_parent->globals.references.get(value); }
+
+    m_parent->set_error(vmc::UndefinedRegisterError(m_parent->get_current_line(), value));
     return value;
 }
 
@@ -318,3 +330,12 @@ void Parser::set_error(std::string error)
 bool Parser::has_error() const { return this->flags.has_error; }
 /*Returns a read only reference to the errors.*/
 const vmc::string_array& Parser::get_errors() const { return this->m_errors; }
+/*
+    Wrapper for parser->globals.references.get().
+    If a reference is not found it sets the parsers error flag.
+*/
+std::string Parser::get_ref(const std::string& external_name)
+{
+    if(!this->globals.references.exists(external_name)){ this->set_error(vmc::UndefinedRegisterError(this->get_current_line(), external_name)); }
+    return this->globals.references.get(external_name);
+}
