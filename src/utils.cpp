@@ -57,25 +57,13 @@ std::string join_string(const std::vector<std::string>& data, std::string delim)
 /*Checks if a vector includes a "search_string"*/
 bool includes(const std::vector<std::string>& data, std::string search_string)
 {
-    auto it = std::find_if(data.begin(), data.end(), [&search_string](const std::string token)
-    {
-        return token == search_string;
-    });
-    if(it == data.end()){ return false; }
-
-    return true;
+    return std::find(data.begin(), data.end(), search_string) != data.end();
 }
 
 /*Checks if a string includes a "search_char"*/
 bool includes(const std::string& data, char search_char)
 {
-    auto it = std::find_if(data.begin(), data.end(), [&search_char](const char token)
-    {
-        return token == search_char;
-    });
-    if(it == data.end()){ return false; }
-
-    return true;
+    return std::find(data.begin(), data.end(), search_char) != data.end();
 }
 
 bool is_number(const std::string& str)
