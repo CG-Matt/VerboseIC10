@@ -34,6 +34,7 @@ namespace vmc
         std::size_t size();
         
         operator std::vector<std::string>() const;
+        operator vmc::string_array_view();
         std::string& operator[](size_t idx);
         vmc::string_array& operator=(const std::vector<std::string>& data);
 
@@ -49,7 +50,6 @@ namespace vmc
         bool includes(const std::string& search_string) const;
         std::string shift();
         std::string& v_shift();
-        vmc::string_array_view make_view();
         vmc::string_array_view make_offset_view();
         std::string join(std::string delim);
         void add_end(const std::string& data);

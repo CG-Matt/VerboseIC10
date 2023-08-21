@@ -18,6 +18,7 @@ namespace vmc
     std::size_t string_array::size(){ return m_data.size(); }
 
     string_array::operator std::vector<std::string>() const { return m_data; }
+    string_array::operator vmc::string_array_view(){ return vmc::string_array_view{m_data.begin(), m_data.end()}; }
     std::string& string_array::operator[](size_t idx){ return m_data[idx]; }
     vmc::string_array& string_array::operator=(const std::vector<std::string>& data)
     {
@@ -85,14 +86,6 @@ namespace vmc
         return data;
     }
 
-    /*
-        Returns a string_array_view of the array.
-        As views allow direct access to the array's data they are not const.
-    */
-    vmc::string_array_view string_array::make_view()
-    {
-        return vmc::string_array_view{m_data.begin(), m_data.end()};
-    }
     /*
         Returns a string_array_view starting at the internal offset.
         As views allow direct access to the array's data they are not const.

@@ -46,7 +46,7 @@ namespace c_commands
         std::string& first = args.v_shift();
         if(starts_with(first, "["))
         {
-            vmc::string_array arr = parser->utils.parse_array(args.make_view());
+            vmc::string_array arr = parser->utils.parse_array(args);
             if(parser->has_error()){ return; }
             for(auto &entry : arr)
             {
