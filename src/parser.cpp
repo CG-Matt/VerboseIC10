@@ -305,7 +305,7 @@ void Parser::parse()
         {
             cmd = commands_map.at(rcmd.m_first);
         }
-        cmd(rcmd.m_args, rcmd.m_line_idx, this);
+        cmd(rcmd.m_args, this);
     }
     
     if(this->has_error()){ return; }
