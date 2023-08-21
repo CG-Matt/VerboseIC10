@@ -1,4 +1,5 @@
 #include <string>
+#include <string_view>
 #include <vector>
 #include <algorithm>
 #include <sstream>
@@ -66,18 +67,20 @@ bool includes(const std::string& data, char search_char)
     return std::find(data.begin(), data.end(), search_char) != data.end();
 }
 
-bool is_number(const std::string& str)
+bool is_number(std::string_view str)
 {
-    bool is_int = str.find_first_not_of("0123456789") == std::string::npos;
+    if(str.front() == '-'){ str.remove_prefix(1); } 
+
+    bool is_int = str.find_first_not_of("0123456789") == std::string_view::npos;
     if(is_int){ return true; }
     
-    bool has_decimal = str.find_first_not_of("0123456789.") == std::string::npos;
+    bool has_decimal = str.find_first_not_of("0123456789.") == std::string_view::npos;
     if(!has_decimal){ return false; }
     
     bool len_two = str.size() > 1;
     if(!len_two){ return false; }
     
-    bool start_with_point = str.rfind(".", 0) == 0;
+    bool start_with_point = str.front() == '.';
     if(start_with_point){ return false; }
     
     unsigned int points = 0;

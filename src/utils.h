@@ -1,11 +1,12 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 #include "data_structs.h"
 
 // Type Checking
-bool is_number(const std::string& str);
+bool is_number(std::string_view str);
 bool is_boolean(const std::string& variable);
 bool is_reference(const std::string& variable);
 
