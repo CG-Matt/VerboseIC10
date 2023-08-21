@@ -18,15 +18,3 @@ ProgramLine::ProgramLine(const std::string& line, uint16_t line_idx)
     this->m_first = first;
     this->m_args = tokens;
 }
-
-unsigned int List::get_length() const { return m_length; }
-void List::add(const std::string& line)
-{
-    m_lines.push_back(line);
-    m_length++;
-}
-
-std::string List::concat()
-{
-    return join_string(m_lines, "\n");
-}

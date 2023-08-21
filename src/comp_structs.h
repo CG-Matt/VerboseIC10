@@ -27,16 +27,3 @@ struct Device
     std::string variable;
     bool is_prefabhash = false;
 };
-
-class List
-{
-    private:
-        unsigned int m_length = 0;
-
-    public:
-        std::vector<std::string> m_lines;
-
-    unsigned int get_length() const;
-    void add(const std::string& line);
-    std::string concat();
-};

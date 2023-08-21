@@ -214,8 +214,6 @@ namespace c_commands
     }
     void p_if(vmc::string_array& args, Parser* parser)
     {
-        List list;
-
         auto labels = parser->globals.generate_conditional_labels();
         const std::string& fail_label = labels.fail_label;
 
@@ -238,7 +236,7 @@ namespace c_commands
                 return;
             }
             comparator = invert_comparator.at(comparator);
-            list.add(B_compare(comparator, reg, value, fail_label));
+            parser->output.add_end(B_compare(comparator, reg, value, fail_label));
             if(args.contains_data())
             {
                 if(includes(combinators, args[0])){ args.shift(); }
@@ -246,20 +244,15 @@ namespace c_commands
         }
 
         parser->flags.in_conditional = true;
-
-        parser->output.add_end(list.concat());
     }
     void p_else(vmc::string_array& args, Parser* parser)
     {
         if(!parser->flags.in_conditional){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Conditional not initialised correctly")); return; }
 
-        List list;
         parser->flags.is_conditional_else = true;
 
-        list.add(ins::j(parser->globals.conditional.end_label));
-        list.add(ins::label(parser->globals.conditional.fail_label));
-
-        parser->output.add_end(list.concat());
+        parser->output.add_end(ins::j(parser->globals.conditional.end_label));
+        parser->output.add_end(ins::label(parser->globals.conditional.fail_label));
     }
     void end(vmc::string_array& args, Parser* parser)
     {
