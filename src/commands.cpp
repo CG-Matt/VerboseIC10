@@ -31,7 +31,7 @@ namespace c_commands
             vmc::string_array arr = parser->utils.parse_array(args.make_offset_view());
             if(parser->has_error()){ return; }
             if(arr.size() > 6){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Too many devices listed. (" + std::to_string(arr.size()) + "/6)")); return; }
-            for(int i = 0; i < arr.size(); i++)
+            for(uint32_t i = 0; i < arr.size(); i++)
             {
                 parser->globals.references.add(arr[i], available_devices[i], ParserReferences::ref_type::dev);
             }

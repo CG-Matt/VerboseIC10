@@ -20,7 +20,7 @@ std::string join_string(const vmc::string_array_view& view);
 std::string join_string(const std::vector<std::string>& data);
 std::string join_string(const std::vector<std::string>& data, std::string delim);
 std::vector<std::string> split_string(const std::string& str, char delim);
-bool includes(const std::vector<std::string>& data, std::string search_string);
+bool includes(const std::vector<std::string>& data, const std::string& search_string);
 
 // Custom data parsing
 std::string parse_boolean(const std::string& variable);

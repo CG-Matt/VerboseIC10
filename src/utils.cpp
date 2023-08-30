@@ -46,7 +46,7 @@ std::string join_string(const std::vector<std::string>& data)
 std::string join_string(const std::vector<std::string>& data, std::string delim)
 {
     std::stringstream ss;
-    for(int i = 0; i < data.size(); i++)
+    for(uint32_t i = 0; i < data.size(); i++)
     {
         if(i != 0){ ss << delim; }
         ss << data[i];
@@ -56,7 +56,7 @@ std::string join_string(const std::vector<std::string>& data, std::string delim)
 }
 
 /*Checks if a vector includes a "search_string"*/
-bool includes(const std::vector<std::string>& data, std::string search_string)
+bool includes(const std::vector<std::string>& data, const std::string& search_string)
 {
     return std::find(data.begin(), data.end(), search_string) != data.end();
 }

@@ -6,10 +6,10 @@
 
 struct ConditionalInfo
 {
-    int idx = 0;
-    std::string pass_label = "";
-    std::string fail_label = "";
-    std::string end_label = "";
+    uint8_t idx = 0;
+    std::string pass_label;
+    std::string fail_label;
+    std::string end_label;
 };
 
 struct ProgramLine
