@@ -20,6 +20,7 @@ namespace c_commands
         if(includes(valid_devices, selector))
         {
             std::string& name = args.v_shift();
+            if(parser->globals.references.exists(name)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + name + "\" already exists.")); }
             parser->globals.references.add(name, selector, ParserReferences::ref_type::dev);
             parser->flags.available_devices--;
             return;
@@ -33,6 +34,7 @@ namespace c_commands
             if(arr.size() > 6){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Too many devices listed. (" + std::to_string(arr.size()) + "/6)")); return; }
             for(uint32_t i = 0; i < arr.size(); i++)
             {
+                if(parser->globals.references.exists(arr[i])){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + arr[i] + "\" already exists.")); }
                 parser->globals.references.add(arr[i], available_devices[i], ParserReferences::ref_type::dev);
             }
             return;
@@ -50,11 +52,13 @@ namespace c_commands
             if(parser->has_error()){ return; }
             for(auto &entry : arr)
             {
+                if(parser->globals.references.exists(entry)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + entry + "\" already exists.")); }
                 parser->globals.references.add(entry, parser->globals.references.get_free(), ParserReferences::ref_type::reg);
             }
             return;
         }
 
+        if(parser->globals.references.exists(first)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + first + "\" already exists.")); }
         std::string reg = parser->globals.references.get_free();
         parser->globals.references.add(first, reg, ParserReferences::ref_type::reg);
     }
@@ -259,15 +263,15 @@ namespace c_commands
         if(args.size() < 1){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 1)); return; }
 
         if(args[0] == "if")
-    {
-        if(!parser->flags.in_conditional){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Conditional not initialised correctly")); return; }
+        {
+            if(!parser->flags.in_conditional){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Conditional not initialised correctly")); return; }
 
-        if(parser->flags.is_conditional_else == false){ parser->output.add_end(ins::label(parser->globals.conditional.fail_label)); return; }
+            if(parser->flags.is_conditional_else == false){ parser->output.add_end(ins::label(parser->globals.conditional.fail_label)); return; }
 
             parser->flags.in_conditional = false;
-        parser->flags.is_conditional_else = false;
-        parser->output.add_end(ins::label(parser->globals.conditional.end_label));
-    }
+            parser->flags.is_conditional_else = false;
+            parser->output.add_end(ins::label(parser->globals.conditional.end_label));
+        }
         else if(args[0] == "sub")
         {
             if(!parser->flags.in_subroutine){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Subroutine not initialised correctly")); return; }
@@ -313,6 +317,7 @@ namespace c_commands
         args.v_shift();
         std::string& value = args.v_shift();
 
+        if(parser->globals.references.exists(const_name)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + const_name + "\" already exists.")); }
         parser->globals.references.add(const_name, value, ParserReferences::ref_type::constant);
     }
     void sub(vmc::string_array& args, Parser* parser)
