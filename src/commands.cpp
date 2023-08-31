@@ -256,12 +256,25 @@ namespace c_commands
     }
     void end(vmc::string_array& args, Parser* parser)
     {
+        if(args.size() < 1){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 1)); return; }
+
+        if(args[0] == "if")
+    {
         if(!parser->flags.in_conditional){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Conditional not initialised correctly")); return; }
 
         if(parser->flags.is_conditional_else == false){ parser->output.add_end(ins::label(parser->globals.conditional.fail_label)); return; }
 
+            parser->flags.in_conditional = false;
         parser->flags.is_conditional_else = false;
         parser->output.add_end(ins::label(parser->globals.conditional.end_label));
+    }
+        else if(args[0] == "sub")
+        {
+            if(!parser->flags.in_subroutine){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Subroutine not initialised correctly")); return; }
+            
+            parser->flags.in_subroutine = false;
+            parser->output.add_end(ins::j("ra"));
+        }
     }
     void xref(vmc::string_array& args, Parser* parser)
     {
@@ -302,6 +315,41 @@ namespace c_commands
 
         parser->globals.references.add(const_name, value, ParserReferences::ref_type::constant);
     }
+    void sub(vmc::string_array& args, Parser* parser)
+    {
+        if(args.size() < 1){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 1)); return; }
+
+        std::string& label_name = args.v_shift();
+
+        if(parser->globals.label_exists(label_name)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Label with name \"" + label_name + "\" already exists.")); return; }
+
+        parser->flags.in_subroutine = true;        
+        parser->globals.register_label(label_name);
+        parser->output.add_end(ins::label(label_name));
+    }
+    void call(vmc::string_array& args, Parser* parser)
+    {
+        if(args.size() < 1){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 1)); return; }
+
+        std::string& label_name = args.v_shift();
+
+        if(!parser->globals.label_exists(label_name)){ parser->globals.unresolved_labels.push_back(vmc::Line{parser->get_current_line(), label_name}); }
+
+        if(args.size() < 2){ parser->output.add_end(ins::jal(label_name)); return; }
+
+        args.v_shift(); // return "if"
+
+        std::string& var1 = args.v_shift();
+        std::string& compare = args.v_shift();
+        std::string& var2 = args.v_shift();
+
+        if(!includes(comparators, compare)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Invalid comparator symbol \"" + compare + "\"")); return; }
+
+        var1 = parser->utils.parse_value(var1);
+        var2 = parser->utils.parse_value(var2);
+
+        parser->output.add_end(RA_compare(compare, var1, var2, label_name));
+    }
 };
 
 std::unordered_map<std::string, cmd_func> commands_map =
@@ -322,5 +370,7 @@ std::unordered_map<std::string, cmd_func> commands_map =
     { "else", c_commands::p_else },
     { "end", c_commands::end },
     { "xref", c_commands::xref },
-    { "const", c_commands::p_const }
+    { "const", c_commands::p_const },
+    { "sub", c_commands::sub },
+    { "call", c_commands::call }
 };

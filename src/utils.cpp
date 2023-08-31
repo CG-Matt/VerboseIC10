@@ -153,3 +153,23 @@ std::string BR_compare(const std::string& comparator, const std::string& reg, co
 
     return "ERROR: Not recognised comparator";
 }
+
+std::string RA_compare(const std::string& comparator, const std::string& reg, const std::string& value, const std::string& label)
+{
+    if(value == "0")
+    {
+        if(comparator == "=="){ return ins::beqzal(reg, label); }
+        if(comparator == "!="){ return ins::bnezal(reg, label); }
+        if(comparator == ">"){ return ins::bgtzal(reg, label); }
+        if(comparator == "<"){ return ins::bltzal(reg, label); }
+    }
+    else
+    {
+        if(comparator == "=="){ return ins::beqal(reg, value, label); }
+        if(comparator == "!="){ return ins::bneal(reg, value, label); }
+        if(comparator == ">"){ return ins::bgtal(reg, value, label); }
+        if(comparator == "<"){ return ins::bltal(reg, value, label); }
+    }
+    
+    return "ERROR: Not recognised comparator";
+}

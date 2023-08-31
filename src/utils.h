@@ -28,3 +28,4 @@ std::string parse_boolean(const std::string& variable);
 // Comparing functions
 std::string B_compare(const std::string& comparator, const std::string& reg, const std::string& value, const std::string& label);
 std::string BR_compare(const std::string& comparator, const std::string& reg, const std::string& value, const std::string& lines);
+std::string RA_compare(const std::string& comparator, const std::string& reg, const std::string& value, const std::string& label);

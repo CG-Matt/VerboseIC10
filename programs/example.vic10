@@ -132,6 +132,23 @@ wait 4
 
 
 
+$ The sub command allows us to define subroutines which can be called anywhere in the program using the call command.
+$ Subroutines need a name and need to be closed using the end command.
+sub example_subroutine
+    math counter += 10
+end sub
+
+
+
+$ The call command lets up call a subroutine from anywhere in our program.
+$ After the subroutine is executred the program will continue execution after the call command.
+call example_subroutine
+
+$ The call command can also accept a conditinal statement to call a subroutine only if a condition is met.
+call example_subroutine if counter < 10
+
+
+
 $ POTENTIALLY BUGGY PLEASE AVOID USING
 $ move lets up jump forward or backward a specified number of lines with or without a condition.
 $ Positive line numbers result in a jump forward and negative in a jump backward.
@@ -157,9 +174,9 @@ if var1 != 0 and counter > 20
     trans computer.PrefabHash => computer.Setting
 else
     math counter += 10
-end
+end if
 
 $ If commands do not require an else statement and will work without one
 if counter < 20
     jump => end_loop
-end
+end if
