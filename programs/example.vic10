@@ -102,9 +102,13 @@ trans vending_machine.Setting => computer.Setting
 
 
 
+$ DEPRICATED
 $ math is used to perform +, -, * and / operations on variables
 $ The math command also supports +=, -=, *= and /= operations
-math counter += 10
+math counter += 5
+
+$ Math operations can now be performed implicitly without the math command
+counter += 5
 
 
 

@@ -297,9 +297,11 @@ void Parser::parse()
         {
             if(!this->globals.references.defined_registers.includes(rcmd.m_first)){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Command \"" + rcmd.m_first + "\" is not a valid command")); continue; }
             if(commands_map.find("set") == commands_map.end()){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Call to set command from parser errored")); continue; } // Hopefully will prevent crashes if set is ever removed
+            if(commands_map.find("math") == commands_map.end()){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Call to math command from parser errored")); continue; } // Hopefully will prevent crashes if math is ever removed
             
+            if(rcmd.m_args[0] == "=" && rcmd.m_args.size() == 2){ cmd = commands_map.at("set"); }
+            else{ cmd = commands_map.at("math"); }
             rcmd.m_args.add_begin(rcmd.m_first);
-            cmd = commands_map.at("set");
         }
         else
         {
