@@ -48,9 +48,9 @@ int main(int argc, char **argv)
     if(config.log_ref_table)
     {
         std::cout << "REF_TABLE:" << std::endl;
-        for(auto& def : parser.globals.references.m_definitions)
+        for(auto& def : parser.globals.references.get_all())
         {
-            std::cout << "   - " << "Int: " << def.m_internal << " Ext: " << def.m_external << std::endl;
+            std::cout << "   - " << "Int: " << def.second.m_value << " Ext: " << def.first << std::endl;
         }
     }
 

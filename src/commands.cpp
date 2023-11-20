@@ -21,7 +21,7 @@ namespace c_commands
         {
             std::string& name = args.v_shift();
             if(parser->globals.references.exists(name)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + name + "\" already exists.")); }
-            parser->globals.references.add(name, selector, ParserReferences::ref_type::dev);
+            parser->globals.references.add(name, selector, identifier_type::dev);
             parser->flags.available_devices--;
             return;
         }
@@ -35,7 +35,7 @@ namespace c_commands
             for(uint32_t i = 0; i < arr.size(); i++)
             {
                 if(parser->globals.references.exists(arr[i])){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + arr[i] + "\" already exists.")); }
-                parser->globals.references.add(arr[i], available_devices[i], ParserReferences::ref_type::dev);
+                parser->globals.references.add(arr[i], available_devices[i], identifier_type::dev);
             }
             return;
         }
@@ -52,15 +52,16 @@ namespace c_commands
             if(parser->has_error()){ return; }
             for(auto &entry : arr)
             {
+                const std::string& free_reg = parser->globals.references.get_free();
                 if(parser->globals.references.exists(entry)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + entry + "\" already exists.")); }
-                parser->globals.references.add(entry, parser->globals.references.get_free(), ParserReferences::ref_type::reg);
+                parser->globals.references.add(entry, free_reg, identifier_type::reg);
             }
             return;
         }
 
         if(parser->globals.references.exists(first)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + first + "\" already exists.")); }
         std::string reg = parser->globals.references.get_free();
-        parser->globals.references.add(first, reg, ParserReferences::ref_type::reg);
+        parser->globals.references.add(first, reg, identifier_type::reg);
     }
     void set(vmc::string_array& args, Parser* parser)
     {
@@ -318,7 +319,7 @@ namespace c_commands
         std::string& value = args.v_shift();
 
         if(parser->globals.references.exists(const_name)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + const_name + "\" already exists.")); }
-        parser->globals.references.add(const_name, value, ParserReferences::ref_type::constant);
+        parser->globals.references.add(const_name, value, identifier_type::constant);
     }
     void sub(vmc::string_array& args, Parser* parser)
     {

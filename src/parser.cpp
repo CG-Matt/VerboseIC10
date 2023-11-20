@@ -15,62 +15,34 @@ PReference::PReference(const std::string& internal, const std::string& external)
     m_external = external;
 }
 
-void ParserReferences::add(const std::string& external_name, const std::string& internal_name, ref_type ref_type)
+void ParserReferences::add(const std::string& name, const std::string& value, identifier_type type)
 {
-    m_definitions.push_back(PReference(internal_name, external_name));
-    
-    if(ref_type == ParserReferences::ref_type::reg)
-    {
-        this->defined_registers.add_end(external_name);
-    }
+    m_definitions.insert({name, Identifier{type, value}});
+    if(type == identifier_type::reg){ m_free_register_offset++; }
+}
+void ParserReferences::add_end(const std::string& name, const std::string& value, identifier_type type)
+{
+    m_definitions.insert({name, Identifier{type, value}});
+    if(type == identifier_type::reg){ m_free_register_end--; }
 }
 /*Checks if a reference with the supplied external name exists*/
-bool ParserReferences::exists(const std::string& external_name) const
+bool ParserReferences::exists(const std::string& name) const
 {
-    auto it = std::find_if(m_definitions.begin(), m_definitions.end(), [&external_name](const PReference ref)
-    {
-        return ref.m_external == external_name;
-    });
-    return it != m_definitions.end();
+    return m_definitions.find(name) != m_definitions.end();
 }
-std::string ParserReferences::get(const std::string& external_name) const
+std::string ParserReferences::get(const std::string& name) const
 {
-    auto res = std::find_if(m_definitions.begin(), m_definitions.end(), [&external_name](const PReference ref)
-    {
-        return ref.m_external == external_name;
-    });
-    if(res != m_definitions.end())
-    {
-        return m_definitions[res - m_definitions.begin()].m_internal;
-    }
-    return "";
+    return m_definitions.at(name).m_value;
 }
-std::string ParserReferences::get_ext(const std::string& internal_name) const
+identifier_type ParserReferences::get_type(const std::string& name) const
 {
-    auto res = std::find_if(m_definitions.begin(), m_definitions.end(), [&internal_name](const PReference ref)
-    {
-        return ref.m_internal == internal_name;
-    });
-    if(res != m_definitions.end())
-    {
-        return m_definitions[res - m_definitions.begin() + 1].m_external;
-    }
-    return "";
+    return m_definitions.at(name).m_type;
 }
-std::string ParserReferences::get_free() const
+const std::string& ParserReferences::get_free() // Needs fixing
 {
-    for (auto &reg : valid_registers)
-    {
-        auto res = std::find_if(m_definitions.begin(), m_definitions.end(), [&reg](const PReference ref)
-        {
-            return ref.m_internal == reg;
-        });
-        if(res == m_definitions.end())
-        {
-            return reg;
-        }
-    }
-    return "";
+    if(m_free_register_offset > m_free_register_end){ return ""; }
+    const std::string& reg = valid_registers.at(m_free_register_offset);
+    return reg;
 }
 
 
@@ -229,11 +201,11 @@ Parser::Parser(std::vector<vmc::Line> &file_contents)
 }
 void Parser::p_init_globals()
 {
-    globals.references.add("Self", "db", ParserReferences::ref_type::dev);
+    globals.references.add("Self", "db", identifier_type::dev);
 }
 void Parser::p_parse_file(std::vector<vmc::Line>& file_contents)
 {
-    this->m_input.reserve(file_contents.size()); // Reduced mallocs by ~40
+    this->m_input.reserve(file_contents.size());
     for(auto& line : file_contents)
     {
         std::string& text = line.m_data;
@@ -272,7 +244,7 @@ void Parser::p_parse_directives()
 
             if(feature == "carry")
             {
-                globals.references.add("carry", "r15", ParserReferences::ref_type::reg);
+                globals.references.add_end("carry", "r15", identifier_type::reg);
                 flags.available_registers--;
                 flags.using_carry = true;
             }
@@ -295,7 +267,11 @@ void Parser::parse()
         this->m_current_line = rcmd.m_line_idx;
         if(commands_map.find(rcmd.m_first) == commands_map.end())
         {
-            if(!this->globals.references.defined_registers.includes(rcmd.m_first)){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Command \"" + rcmd.m_first + "\" is not a valid command")); continue; }
+            if(!this->globals.references.exists(rcmd.m_first)){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Command \"" + rcmd.m_first + "\" is not a valid command")); continue; }
+            // if(!this->globals.references.defined_registers.includes(rcmd.m_first)){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Command \"" + rcmd.m_first + "\" is not a valid command")); continue; }
+            
+            if(this->globals.references.get_type(rcmd.m_first) == identifier_type::constant){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Identifier \"" + rcmd.m_first + "\" is const and cannot be modified.")); continue; }
+            
             if(commands_map.find("set") == commands_map.end()){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Call to set command from parser errored")); continue; } // Hopefully will prevent crashes if set is ever removed
             if(commands_map.find("math") == commands_map.end()){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Call to math command from parser errored")); continue; } // Hopefully will prevent crashes if math is ever removed
             

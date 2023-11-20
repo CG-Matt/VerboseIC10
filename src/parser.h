@@ -2,8 +2,18 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include "constants.h"
 #include "comp_structs.h"
 #include "data_structs.h"
+
+enum identifier_type : uint8_t{ reg = 0, dev, constant };
+
+struct Identifier
+{
+    identifier_type m_type;
+    std::string m_value;
+};
 
 class PReference
 {
@@ -16,17 +26,20 @@ class PReference
 
 class ParserReferences
 {
+    private:
+        uint8_t m_free_register_offset = 0;
+        uint8_t m_free_register_end = valid_registers.size() - 1;
+
     public:
-        std::vector<PReference> m_definitions;
-        vmc::string_array defined_registers;
+        std::unordered_map<std::string, Identifier> m_definitions;
 
-    enum ref_type : uint8_t{ reg, dev, constant };
-
-    void add(const std::string& external_name, const std::string& internal_name, ref_type ref_type);
+    void add(const std::string& name, const std::string& value, identifier_type type);
+    void add_end(const std::string& name, const std::string& value, identifier_type type);
     bool exists(const std::string& external_name) const;
     std::string get(const std::string& external_name) const;
-    std::string get_ext(const std::string& internal_name) const;
-    std::string get_free() const;
+    identifier_type get_type(const std::string& external_name) const;
+    const std::string& get_free();
+    inline const std::unordered_map<std::string, Identifier>& get_all() const { return m_definitions; }
 };
 
 class ParserGlobals
