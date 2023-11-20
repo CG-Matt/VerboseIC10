@@ -31,4 +31,25 @@ namespace c_commands
     void call(vmc::string_array& args, Parser* parser);
 };
 
-extern std::unordered_map<std::string, cmd_func> commands_map;
+static const std::unordered_map<std::string, cmd_func> commands_map =
+{
+    { "dev", c_commands::dev },
+    { "reg", c_commands::reg },
+    { "set", c_commands::set },
+    { "label", c_commands::label },
+    { "export", c_commands::eport },
+    { "wait", c_commands::wait },
+    { "move", c_commands::move },
+    { "math", c_commands::math },
+    { "jump", c_commands::jump },
+    { "import", c_commands::import },
+    { "branch", c_commands::branch },
+    { "trans", c_commands::trans },
+    { "if", c_commands::p_if },
+    { "else", c_commands::p_else },
+    { "end", c_commands::end },
+    { "xref", c_commands::xref },
+    { "const", c_commands::p_const },
+    { "sub", c_commands::sub },
+    { "call", c_commands::call }
+};
