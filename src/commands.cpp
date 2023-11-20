@@ -126,6 +126,7 @@ namespace c_commands
         std::string& var1 = args.v_shift();
         std::string op;
         std::string var2;
+        bool is_math_function = false;
 
         if(set_op == "+=" || set_op == "-=" || set_op == "*=" || set_op == "/=")
         {
@@ -135,8 +136,18 @@ namespace c_commands
         }
         else if(set_op == "=")
         {
-            op = args.v_shift();
-            var2 = args.v_shift();
+            if(std::find(math_functions.begin(), math_functions.end(), var1) == math_functions.end())
+            {
+                op = args.v_shift();
+                var2 = args.v_shift();
+            }
+            else
+            {
+                op = var1;
+                if(args.v_shift() != "<-"){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Invalid math function call")); }
+                var1 = args.v_shift();
+                is_math_function = true;
+            }
         }
         else
         {
@@ -146,12 +157,17 @@ namespace c_commands
 
         reg = parser->get_ref(reg);
         var1 = parser->utils.parse_value(var1);
-        var2 = parser->utils.parse_value(var2);
 
-        if(operations.find(op) == operations.end()){ parser->set_error(vmc::InvalidMathOpError(parser->get_current_line(), op)); return; }
-        op = operations.at(op);
+        if(!is_math_function)
+        {
+            var2 = parser->utils.parse_value(var2);
+            if(operations.find(op) == operations.end()){ parser->set_error(vmc::InvalidMathOpError(parser->get_current_line(), op)); return; }
+            op = operations.at(op);
+            parser->output.add_end(ins::math(op, reg, var1, var2));
+            return;
+        }
 
-        parser->output.add_end(ins::math(op, reg, var1, var2));
+        parser->output.add_end(ins::math_func(op, reg, var1));
     }
     void jump(vmc::string_array& args, Parser* parser)
     {

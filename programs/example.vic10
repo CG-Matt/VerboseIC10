@@ -110,12 +110,15 @@ math counter += 5
 $ Math operations can now be performed implicitly without the math command
 counter += 5
 
+$ we can also use math functions such as sin, acos or sqrt as follows
+$ note math functions can only be used with the "=" assignment and will not work with "+=" assignment or similar
+var1 = sqrt <- 125
 
 
 $ jump moves the point of execution to a defined label
 jump => small_skip
 
-$ this code will not be run as we are jumping over it
+$ this code will not run as we are jumping over it
 counter = 100
 
 label small_skip

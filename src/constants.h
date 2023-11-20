@@ -10,12 +10,14 @@ const std::vector<std::string> valid_registers{ "r0", "r1", "r2", "r3", "r4", "r
 const std::vector<std::string> comparators{ "==", "!=", ">", ">=", "<", "<=" };
 const std::vector<std::string> combinators{ "and", "or" };
 const std::vector<std::string> special_commands{ "if", "else", "end" };
+const std::vector<std::string> math_functions{ "sin", "cos", "tan", "asin", "acos", "atan", "abs", "ceil", "floor", "exp", "log", "sqrt", "round", "trunc" };
 const std::unordered_map<std::string, std::string> operations =
 {
     { "+", "add" },
     { "-", "sub" },
     { "*", "mul" },
-    { "/", "div" }
+    { "/", "div" },
+    { "%", "mod"}
 };
 const std::unordered_map<std::string, std::string> invert_comparator =
 {
