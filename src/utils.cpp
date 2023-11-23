@@ -116,72 +116,21 @@ bool ends_with(const std::string& data, const std::string& segment){ return data
 
 std::string B_compare(const std::string& comparator, const std::string& reg, const std::string& value, const std::string& label)
 {
-    if(value == "0")
-    {
-        if(comparator == "=="){ return ins::beqz(reg, label); }
-        if(comparator == "!="){ return ins::bnez(reg, label); }
-        if(comparator == ">"){ return ins::bgtz(reg, label); }
-        if(comparator == "<"){ return ins::bltz(reg, label); }
-        if(comparator == ">="){ return ins::bgez(reg, label); }
-        if(comparator == "<="){ return ins::blez(reg, label); }
-    }
-    else
-    {
-        if(comparator == "=="){ return ins::beq(reg, value, label); }
-        if(comparator == "!="){ return ins::bne(reg, value, label); }
-        if(comparator == ">"){ return ins::bgt(reg, value, label); }
-        if(comparator == "<"){ return ins::blt(reg, value, label); }
-        if(comparator == ">="){ return ins::bge(reg, value, label); }
-        if(comparator == "<="){ return ins::ble(reg, value, label); }
-    }
+    std::string comp = comparators.at(comparator);
 
-    return "ERROR: Not recognised comparator";
+    return value == "0" ? ins::branch_z(comp, reg, label) : ins::branch(comp, reg, value, label);
 }
 
 std::string BR_compare(const std::string& comparator, const std::string& reg, const std::string& value, const std::string& lines)
 {
-    if(value == "0")
-    {
-        if(comparator == "=="){ return ins::breqz(reg, lines); }
-        if(comparator == "!="){ return ins::brnez(reg, lines); }
-        if(comparator == ">"){ return ins::brgtz(reg, lines); }
-        if(comparator == "<"){ return ins::brltz(reg, lines); }
-        if(comparator == ">="){ return ins::brgez(reg, lines); }
-        if(comparator == "<="){ return ins::brlez(reg, lines); }
-    }
-    else
-    {
-        if(comparator == "=="){ return ins::breq(reg, value, lines); }
-        if(comparator == "!="){ return ins::brne(reg, value, lines); }
-        if(comparator == ">"){ return ins::brgt(reg, value, lines); }
-        if(comparator == "<"){ return ins::brlt(reg, value, lines); }
-        if(comparator == ">="){ return ins::brge(reg, value, lines); }
-        if(comparator == "<="){ return ins::brle(reg, value, lines); }
-    }
+    std::string comp = comparators.at(comparator);
 
-    return "ERROR: Not recognised comparator";
+    return value == "0" ? ins::branch_relative_z(comp, reg, lines) : ins::branch_relative(comp, reg, value, lines);
 }
 
 std::string RA_compare(const std::string& comparator, const std::string& reg, const std::string& value, const std::string& label)
 {
-    if(value == "0")
-    {
-        if(comparator == "=="){ return ins::beqzal(reg, label); }
-        if(comparator == "!="){ return ins::bnezal(reg, label); }
-        if(comparator == ">"){ return ins::bgtzal(reg, label); }
-        if(comparator == "<"){ return ins::bltzal(reg, label); }
-        if(comparator == ">="){ return ins::bgezal(reg, label); }
-        if(comparator == "<="){ return ins::blezal(reg, label); }
-    }
-    else
-    {
-        if(comparator == "=="){ return ins::beqal(reg, value, label); }
-        if(comparator == "!="){ return ins::bneal(reg, value, label); }
-        if(comparator == ">"){ return ins::bgtal(reg, value, label); }
-        if(comparator == "<"){ return ins::bltal(reg, value, label); }
-        if(comparator == ">="){ return ins::bgeal(reg, value, label); }
-        if(comparator == "<="){ return ins::bleal(reg, value, label); }
-    }
-    
-    return "ERROR: Not recognised comparator";
+    std::string comp = comparators.at(comparator);
+
+    return value == "0" ? ins::sub_call_z(comp, reg, label) : ins::sub_call(comp, reg, value, label);
 }

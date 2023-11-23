@@ -8,49 +8,19 @@ namespace ins
 {
     // Branch
 
-    inline std::string beq(const str reg, const str value, const str label){ return "beq " + reg + " " + value + " " + label; }
-    inline std::string bne(const str reg, const str value , const str label){ return "bne " + reg + " " + value + " " + label; }
-    inline std::string bgt(const str value1, const str value2, const str label){ return "bgt " + value1 + " " + value2 + " " + label; }
-    inline std::string blt(const str value1, const str value2, const str label){ return "blt " + value1 + " " + value2 + " " + label; }
-    inline std::string bge(const str value1, const str value2, const str label){ return "bge " + value1 + " " + value2 + " " + label; }
-    inline std::string ble(const str value1, const str value2, const str label){ return "ble " + value1 + " " + value2 + " " + label; }
-    inline std::string beqz(const str reg, const str label){ return "beqz " + reg + " " + label; }
-    inline std::string bnez(const str reg, const str label){ return "bnez " + reg + " " + label; }
-    inline std::string bgtz(const str reg, const str label){ return "bgtz " + reg + " " + label; }
-    inline std::string bltz(const str reg, const str label){ return "bltz " + reg + " " + label; }
-    inline std::string bgez(const str reg, const str label){ return "bgez " + reg + " " + label; }
-    inline std::string blez(const str reg, const str label){ return "blez " + reg + " " + label; }
+    inline std::string branch(const str comp, const str reg, const str value, const str label){ return "b" + comp + " " + reg + " " + value + " " + label; }
+    inline std::string branch_z(const str comp, const str reg, const str label){ return "b" + comp + "z " + reg + " " + label; }
 
     // Branch Relative
 
-    inline std::string breq(const str reg, const str value, const str lines){ return "breq " + reg + " " + value + " " + lines; }
-    inline std::string brne(const str reg, const str value, const str lines){ return "brne " + reg + " " + value + " " + lines; }
-    inline std::string brgt(const str reg, const str value, const str lines){ return "brgt " + reg + " " + value + " " + lines; }
-    inline std::string brlt(const str reg, const str value, const str lines){ return "brlt " + reg + " " + value + " " + lines; }
-    inline std::string brge(const str reg, const str value, const str lines){ return "brge " + reg + " " + value + " " + lines; }
-    inline std::string brle(const str reg, const str value, const str lines){ return "brle " + reg + " " + value + " " + lines; }    inline std::string breqz(const str reg, const str lines){ return "breqz " + reg + " " + lines; }
-    inline std::string breqz(const str reg, const str lines){ return "breqz " + reg + " " + lines; }
-    inline std::string brnez(const str reg, const str lines){ return "brnez " + reg + " " + lines; }
-    inline std::string brgtz(const str reg, const str lines){ return "brgtz " + reg + " " + lines; }
-    inline std::string brltz(const str reg, const str lines){ return "brltz " + reg + " " + lines; }
-    inline std::string brgez(const str reg, const str lines){ return "brgez " + reg + " " + lines; }
-    inline std::string brlez(const str reg, const str lines){ return "brlez " + reg + " " + lines; }
-    
+    inline std::string branch_relative(const str comp, const str reg, const str value, const str lines){ return "br" + comp + " " + reg + " " + value + " " + lines; }
+    inline std::string branch_relative_z(const str comp, const str reg, const str lines){ return "br" + comp + "z " + reg + " " + lines; }
+
     // Subroutine calls
     
     inline std::string jal(str label){ return "jal " + label; }
-    inline std::string beqal(const str reg, const str value, const str lines){ return "beqal " + reg + " " + value + " " + lines; }
-    inline std::string bneal(const str reg, const str value, const str lines){ return "bneal " + reg + " " + value + " " + lines; }
-    inline std::string bgtal(const str reg, const str value, const str lines){ return "bgtal " + reg + " " + value + " " + lines; }
-    inline std::string bltal(const str reg, const str value, const str lines){ return "bltal " + reg + " " + value + " " + lines; }
-    inline std::string bgeal(const str reg, const str value, const str lines){ return "bgeal " + reg + " " + value + " " + lines; }
-    inline std::string bleal(const str reg, const str value, const str lines){ return "bleal " + reg + " " + value + " " + lines; }
-    inline std::string beqzal(const str reg, const str lines){ return "beqzal " + reg + " " + lines; }
-    inline std::string bnezal(const str reg, const str lines){ return "bnezal " + reg + " " + lines; }
-    inline std::string bgtzal(const str reg, const str lines){ return "bgtzal " + reg + " " + lines; }
-    inline std::string bltzal(const str reg, const str lines){ return "bltzal " + reg + " " + lines; }
-    inline std::string bgezal(const str reg, const str lines){ return "bgezal " + reg + " " + lines; }
-    inline std::string blezal(const str reg, const str lines){ return "blezal " + reg + " " + lines; }
+    inline std::string sub_call(const str comp, const str reg, const str value, const str label){ return "b" + comp + "al " + reg + " " + value + " " + label; }
+    inline std::string sub_call_z(const str comp, const str reg, const str label){ return "b" + comp + "zal " + reg + " " + label; }
 
     // Stack Managment
 

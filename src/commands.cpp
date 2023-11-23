@@ -365,7 +365,7 @@ namespace c_commands
         std::string& compare = args.v_shift();
         std::string& var2 = args.v_shift();
 
-        if(!includes(comparators, compare)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Invalid comparator symbol \"" + compare + "\"")); return; }
+        if(comparators.find(compare) == comparators.end()){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Invalid comparator symbol \"" + compare + "\"")); return; }
 
         var1 = parser->utils.parse_value(var1);
         var2 = parser->utils.parse_value(var2);
