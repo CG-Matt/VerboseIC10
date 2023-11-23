@@ -233,12 +233,12 @@ void Parser::p_parse_directives()
 
         if(cur_directive == "version")
         {
-            if(!args.contains_data()){ this->set_error(vmc::GenericError(rdirective.m_line_idx, "No version number provided")); continue; }
+            if(args.empty()){ this->set_error(vmc::GenericError(rdirective.m_line_idx, "No version number provided")); continue; }
             flags.version = std::stoi(args[0]);
         }
         if(cur_directive == "using")
         {
-            if(!args.contains_data()){ this->set_error(vmc::GenericError(rdirective.m_line_idx, "No module name provided")); continue; }
+            if(args.empty()){ this->set_error(vmc::GenericError(rdirective.m_line_idx, "No module name provided")); continue; }
             std::string &feature = args[0];
 
             if(feature == "carry")

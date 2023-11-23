@@ -32,6 +32,7 @@ namespace vmc
         std::vector<std::string>::iterator end();
         std::vector<std::string>::const_iterator end() const;
         std::size_t size();
+        inline bool empty() const { return m_data.empty(); }
         
         operator std::vector<std::string>() const;
         operator vmc::string_array_view();
@@ -45,7 +46,6 @@ namespace vmc
 
         void reserve(size_t size);
 
-        bool contains_data() const;
         int32_t get_idx(const std::string& search_string) const;
         bool includes(const std::string& search_string) const;
         std::string shift();

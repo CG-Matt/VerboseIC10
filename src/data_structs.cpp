@@ -37,8 +37,6 @@ namespace vmc
     /*Preallocate space for the internal vector*/
     void string_array::reserve(size_t size){ m_data.reserve(size); }
 
-    /*Checks if the array length != 0*/
-    bool string_array::contains_data() const { return m_data.size() > 0; }
     /*
         Returns the index of an element in an array.
         Returns "-1" if the element is not found. 

@@ -44,7 +44,7 @@ namespace c_commands
     }
     void reg(vmc::string_array& args, Parser* parser)
     {
-        if(!args.contains_data()){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Register names not provided")); return; }
+        if(args.empty()){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Register names not provided")); return; }
         std::string& first = args.v_shift();
         if(starts_with(first, "["))
         {
@@ -101,7 +101,7 @@ namespace c_commands
     }
     void wait(vmc::string_array& args, Parser* parser)
     {
-        if(!args.contains_data()){ parser->output.add_end(ins::yld()); return; }
+        if(args.empty()){ parser->output.add_end(ins::yld()); return; }
         // The first argument is the time to sleep
         parser->output.add_end(ins::sleep(args[0]));
     }
@@ -242,7 +242,7 @@ namespace c_commands
         std::string comparator;
         std::string value;
 
-        while(args.contains_data())
+        while(!args.empty())
         {
             reg = args.shift();
             comparator = args.shift();
@@ -258,7 +258,7 @@ namespace c_commands
             }
             comparator = invert_comparator.at(comparator);
             parser->output.add_end(B_compare(comparator, reg, value, fail_label));
-            if(args.contains_data())
+            if(!args.empty())
             {
                 if(includes(combinators, args[0])){ args.shift(); }
             }
@@ -277,7 +277,7 @@ namespace c_commands
     }
     void end(vmc::string_array& args, Parser* parser)
     {
-        if(args.size() < 1){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 1)); return; }
+        if(args.empty()){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 1)); return; }
 
         if(args[0] == "if")
         {
@@ -339,7 +339,7 @@ namespace c_commands
     }
     void sub(vmc::string_array& args, Parser* parser)
     {
-        if(args.size() < 1){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 1)); return; }
+        if(args.empty()){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 1)); return; }
 
         std::string& label_name = args.v_shift();
 
@@ -351,7 +351,7 @@ namespace c_commands
     }
     void call(vmc::string_array& args, Parser* parser)
     {
-        if(args.size() < 1){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 1)); return; }
+        if(args.empty()){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 1)); return; }
 
         std::string& label_name = args.v_shift();
 
