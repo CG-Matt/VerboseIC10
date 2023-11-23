@@ -38,7 +38,7 @@ class ParserReferences
     bool exists(const std::string& external_name) const;
     std::string get(const std::string& external_name) const;
     identifier_type get_type(const std::string& external_name) const;
-    const std::string& get_free();
+    const std::string get_free();
     inline const std::unordered_map<std::string, Identifier>& get_all() const { return m_definitions; }
 };
 
@@ -116,5 +116,6 @@ class Parser
     void set_error(std::string error);
     bool has_error() const;
     const vmc::string_array& get_errors() const;
-    std::string get_ref(const std::string& external_name);
+    std::string ref_get(const std::string& external_name);
+    std::string reg_get_free();
 };

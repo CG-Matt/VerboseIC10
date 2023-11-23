@@ -38,7 +38,7 @@ identifier_type ParserReferences::get_type(const std::string& name) const
 {
     return m_definitions.at(name).m_type;
 }
-const std::string& ParserReferences::get_free() // Needs fixing
+const std::string ParserReferences::get_free() // Needs fixing
 {
     if(m_free_register_offset > m_free_register_end){ return ""; }
     return valid_registers.at(m_free_register_offset);
@@ -310,8 +310,18 @@ const vmc::string_array& Parser::get_errors() const { return this->m_errors; }
     Wrapper for parser->globals.references.get().
     If a reference is not found it sets the parsers error flag.
 */
-std::string Parser::get_ref(const std::string& external_name)
+std::string Parser::ref_get(const std::string& external_name)
 {
     if(!this->globals.references.exists(external_name)){ this->set_error(vmc::UndefinedRegisterError(this->get_current_line(), external_name)); }
     return this->globals.references.get(external_name);
+}
+/*
+    Wrapper for parser->globals.references.get_free().
+    If a register is not available it sets the parsers error flag.
+*/
+std::string Parser::reg_get_free()
+{
+    std::string reg = this->globals.references.get_free();
+    if(reg.empty()){ this->set_error(vmc::GenericError(this->get_current_line(), "Max register limit has been reached")); }
+    return reg;
 }

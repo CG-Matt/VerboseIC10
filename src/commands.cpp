@@ -52,7 +52,7 @@ namespace c_commands
             if(parser->has_error()){ return; }
             for(auto &entry : arr)
             {
-                const std::string& free_reg = parser->globals.references.get_free();
+                const std::string& free_reg = parser->reg_get_free();
                 if(parser->globals.references.exists(entry)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + entry + "\" already exists.")); }
                 parser->globals.references.add(entry, free_reg, identifier_type::reg);
             }
@@ -60,7 +60,7 @@ namespace c_commands
         }
 
         if(parser->globals.references.exists(first)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + first + "\" already exists.")); }
-        std::string reg = parser->globals.references.get_free();
+        std::string reg = parser->reg_get_free();
         parser->globals.references.add(first, reg, identifier_type::reg);
     }
     void set(vmc::string_array& args, Parser* parser)
@@ -69,7 +69,7 @@ namespace c_commands
         args.v_shift(); // Discard next token
         std::string& value = args.v_shift();
 
-        reg = parser->get_ref(reg);
+        reg = parser->ref_get(reg);
         value = parser->utils.parse_value(value);
 
         parser->output.add_end(ins::move(reg, value));
@@ -116,7 +116,7 @@ namespace c_commands
         std::string& compare = args.v_shift();
         std::string& value = args.v_shift();
 
-        reg = parser->get_ref(reg);
+        reg = parser->ref_get(reg);
         parser->output.add_end(BR_compare(compare, reg, value, lines));
     }
     void math(vmc::string_array& args, Parser* parser)
@@ -155,7 +155,7 @@ namespace c_commands
             return;
         }
 
-        reg = parser->get_ref(reg);
+        reg = parser->ref_get(reg);
         var1 = parser->utils.parse_value(var1);
 
         if(!is_math_function)
@@ -185,7 +185,7 @@ namespace c_commands
         Device target = parser->utils.parse_device(args.v_shift());
         if(parser->has_error()){ return; }
 
-        reg = parser->get_ref(reg);
+        reg = parser->ref_get(reg);
 
         parser->output.add_end(ins::l(reg, target.name, target.variable));
     }
@@ -222,14 +222,14 @@ namespace c_commands
 
         if(destination.is_prefabhash)
         {
-            eport = ins::sb(destination.name, destination.variable, parser->get_ref("carry"));
+            eport = ins::sb(destination.name, destination.variable, parser->ref_get("carry"));
         }
         else
         {
-            eport = ins::s(destination.name, destination.variable, parser->get_ref("carry"));
+            eport = ins::s(destination.name, destination.variable, parser->ref_get("carry"));
         }
 
-        std::string eport2 = ins::l(parser->get_ref("carry"), source.name, source.variable);
+        std::string eport2 = ins::l(parser->ref_get("carry"), source.name, source.variable);
 
         parser->output.add_end(eport2 + "\n" + eport);
     }
@@ -249,7 +249,7 @@ namespace c_commands
             value = args.shift();
             if(reg.empty() || comparator.empty() || value.empty()){ break; }
 
-            reg = parser->get_ref(reg);
+            reg = parser->ref_get(reg);
             value = parser->utils.parse_value(value);
             if(invert_comparator.find(comparator) == invert_comparator.end())
             {
@@ -310,7 +310,7 @@ namespace c_commands
 
         if(direction == "->")
         {
-            reg = parser->get_ref(reg);
+            reg = parser->ref_get(reg);
             parser->output.add_end(ins::l(reg, target.name, target.variable));
             return;
         }
