@@ -41,8 +41,7 @@ identifier_type ParserReferences::get_type(const std::string& name) const
 const std::string& ParserReferences::get_free() // Needs fixing
 {
     if(m_free_register_offset > m_free_register_end){ return ""; }
-    const std::string& reg = valid_registers.at(m_free_register_offset);
-    return reg;
+    return valid_registers.at(m_free_register_offset);
 }
 
 
@@ -63,7 +62,7 @@ void ParserGlobals::register_label(const std::string& label)
 {
     this->labels.push_back(label);
 
-    if(this->unresolved_labels.size() < 1){ return; }
+    if(this->unresolved_labels.empty()){ return; }
 
     std::vector<vmc::Line>::iterator it = this->unresolved_labels.begin();
     while(it != this->unresolved_labels.end())
@@ -83,7 +82,7 @@ void ParserGlobals::register_label(const std::vector<std::string>& labels)
     {
         this->labels.push_back(label);
 
-        if(this->unresolved_labels.size() < 1){ return; }
+        if(this->unresolved_labels.empty()){ return; }
 
         std::vector<vmc::Line>::iterator it = this->unresolved_labels.begin();
         while(it != this->unresolved_labels.end())
@@ -123,7 +122,7 @@ Device ParserUtils::parse_device(std::string& device_in)
         }
         device_in.erase(device_in.begin());
         device_out.name = m_parent->globals.references.get(device_in);
-        if(device_out.name.size() < 1){ m_parent->set_error(vmc::UndefinedDeviceError(m_parent->get_current_line(), device_in)); }
+        if(device_out.name.empty()){ m_parent->set_error(vmc::UndefinedDeviceError(m_parent->get_current_line(), device_in)); }
         device_out.variable = "PrefabHash";
         return device_out;
     }
@@ -142,7 +141,7 @@ Device ParserUtils::parse_device(std::string& device_in)
 
     std::vector<std::string> data = split_string(device_in, '.');
     device_out.name = m_parent->globals.references.get(data[0]);
-    if(device_out.name.size() < 1){ m_parent->set_error(vmc::UndefinedDeviceError(m_parent->get_current_line(), data[0])); }
+    if(device_out.name.empty()){ m_parent->set_error(vmc::UndefinedDeviceError(m_parent->get_current_line(), data[0])); }
     device_out.variable = data[1];
     return device_out;
 }
@@ -210,7 +209,7 @@ void Parser::p_parse_file(std::vector<vmc::Line>& file_contents)
     {
         std::string& text = line.m_data;
 
-        if(text.size() < 1){ continue; } // Ensure that the line is not empty
+        if(text.empty()){ continue; } // Ensure that the line is not empty
         if(text.find_first_not_of(' ') == std::string::npos){ continue; } // Ensure that the line isnt just spaces
 
         while(starts_with(text, " ")){ text.erase(text.begin()); }
@@ -268,7 +267,6 @@ void Parser::parse()
         if(commands_map.find(rcmd.m_first) == commands_map.end())
         {
             if(!this->globals.references.exists(rcmd.m_first)){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Command \"" + rcmd.m_first + "\" is not a valid command")); continue; }
-            // if(!this->globals.references.defined_registers.includes(rcmd.m_first)){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Command \"" + rcmd.m_first + "\" is not a valid command")); continue; }
             
             if(this->globals.references.get_type(rcmd.m_first) == identifier_type::constant){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Identifier \"" + rcmd.m_first + "\" is const and cannot be modified.")); continue; }
             
@@ -288,7 +286,7 @@ void Parser::parse()
     
     if(this->has_error()){ return; }
 
-    if(this->globals.unresolved_labels.size() > 0)
+    if(!this->globals.unresolved_labels.empty())
     {
         for(auto& line : this->globals.unresolved_labels)
         {

@@ -66,7 +66,7 @@ namespace vmc
     */
     std::string string_array::shift()
     {
-        if(m_data.size() < 1){ return ""; }
+        if(m_data.empty()){ return ""; }
 
         std::string str = m_data[0];
         m_data.erase(m_data.begin());

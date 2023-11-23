@@ -93,22 +93,11 @@ bool is_number(std::string_view str)
     return true;
 }
 
-bool is_boolean(const std::string& variable)
-{
-    return variable == "true" || variable == "false";
-}
+bool is_boolean(const std::string& variable){ return variable == "true" || variable == "false"; }
 
-bool is_reference(const std::string& variable)
-{
-    return !is_number(variable);
-}
+bool is_reference(const std::string& variable){ return !is_number(variable); }
 
-std::string parse_boolean(const std::string& variable)
-{
-    if(variable == "true"){ return "1"; }
-    return "0";
-}
-
+std::string parse_boolean(const std::string& variable){ return variable == "true" ? "1" : "0"; }
 
 bool starts_with(const std::string& data, const std::string& segment){ return data.rfind(segment, 0) == 0; }
 

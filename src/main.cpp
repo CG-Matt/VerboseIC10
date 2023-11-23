@@ -12,7 +12,7 @@ int main(int argc, char **argv)
 
     if(argc > 1 && sizeof(argv[1]) < 256){ file_name = argv[1]; }
 
-    if(file_name.size() < 1)
+    if(file_name.empty())
     {
         std::cout << "Please provide the name of a file to parse" << std::endl;
         return 1;

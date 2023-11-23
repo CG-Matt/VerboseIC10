@@ -77,7 +77,7 @@ namespace c_commands
     void label(vmc::string_array& args, Parser* parser)
     {
         std::string& name = args.v_shift();
-        if(name.size() < 1){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Label name required")); return; }
+        if(name.empty()){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Label name required")); return; }
         parser->globals.register_label(name);
 
         parser->output.add_end(ins::label(name));
@@ -110,7 +110,7 @@ namespace c_commands
         std::string& lines = args.v_shift();
         std::string& condition = args.v_shift();
 
-        if(condition.size() < 1){ parser->output.add_end(ins::jr(lines)); return; }
+        if(condition.empty()){ parser->output.add_end(ins::jr(lines)); return; }
 
         std::string& reg = args.v_shift();
         std::string& compare = args.v_shift();
@@ -195,7 +195,7 @@ namespace c_commands
         std::string& label = args.v_shift();
         std::string& condition = args.v_shift();
 
-        if(condition.size() < 1){ return; }
+        if(condition.empty()){ return; }
 
         std::string& var1 = args.v_shift();
         std::string& compare = args.v_shift();
@@ -247,7 +247,7 @@ namespace c_commands
             reg = args.shift();
             comparator = args.shift();
             value = args.shift();
-            if(reg.size() < 1 || comparator.size() < 1 || value.size() < 1){ break; }
+            if(reg.empty() || comparator.empty() || value.empty()){ break; }
 
             reg = parser->get_ref(reg);
             value = parser->utils.parse_value(value);
