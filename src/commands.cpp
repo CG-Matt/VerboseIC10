@@ -1,129 +1,187 @@
 #include <string>
 #include <unordered_map>
-#include "comp_structs.h"
-#include "instructions.h"
-#include "commands.h"
-#include "utils.h"
-#include "data_structs.h"
-#include "constants.h"
+#include "commands.hpp"
+#include "syntax.hpp"
+#include "instructions.hpp"
+#include "parser.hpp"
+
+namespace Utilities
+{
+    std::string B_compare(std::string_view comparator, const std::string& reg, const std::string& value, const std::string& label)
+    {
+        std::string comp = std::string(syntax::logic::toInstruction(comparator));
+
+        return value == "0" ? ins::branch_z(comp, reg, label) : ins::branch(comp, reg, value, label);
+    }
+    std::string BR_compare(std::string_view comparator, const std::string& reg, const std::string& value, const std::string& lines)
+    {
+        std::string comp = std::string(syntax::logic::toInstruction(comparator));
+
+        return value == "0" ? ins::branch_relative_z(comp, reg, lines) : ins::branch_relative(comp, reg, value, lines);
+    }
+    std::string RA_compare(std::string_view comparator, const std::string& reg, const std::string& value, const std::string& label)
+    {
+        std::string comp = std::string(syntax::logic::toInstruction(comparator));
+
+        return value == "0" ? ins::sub_call_z(comp, reg, label) : ins::sub_call(comp, reg, value, label);
+    }
+}
 
 namespace c_commands
 {
-    void dev(vmc::string_array& args, Parser* parser)
+    void dev(vmc::ArgumentList args)
     {
-        if(parser->flags.devices_initialised == true){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Devices have already been initialised")); return; }
-        if(parser->flags.available_devices <= 0){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Max device limit reached")); return; }
-        
-        std::string& selector = args.v_shift();
-        args.v_shift();
+        // Ensure that devices aren't already initialised
+        if(Parser::flags.devices_initialised == true)
+            throw vmc::ParserError("Reinitialisation of devices not allowed.");
 
-        if(includes(valid_devices, selector))
+        // Ensure that we have devices available
+        if(!Parser::device::available())
+            throw vmc::ParserError("Max device limit reached.");
+        
+        const std::string& target = args.next_checked("Missing target device.");
+
+        if(syntax::devices::isValid(target))
         {
-            std::string& name = args.v_shift();
-            if(parser->globals.references.exists(name)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + name + "\" already exists.")); }
-            parser->globals.references.add(name, selector, identifier_type::dev);
-            parser->flags.available_devices--;
+            const std::string& name = args.next_checked("Missing device name.");
+            if(Parser::ident::exists(name)) throw vmc::ParserError("Device with name \"" + name + "\" already exists.");
+            Parser::registerIdentifier(Identifier::Type::DEVICE, target, name);
+            Parser::device::take(target);
             return;
         }
-
-        if(selector == "*")
+        else if(target == "*")
         {
-            parser->flags.devices_initialised = true;
-            vmc::string_array arr = parser->utils.parse_array(args.make_offset_view());
-            if(parser->has_error()){ return; }
-            if(arr.size() > 6){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Too many devices listed. (" + std::to_string(arr.size()) + "/6)")); return; }
-            for(uint32_t i = 0; i < arr.size(); i++)
+            if(!args.expect("="))
+                throw vmc::ParserError("Expected '=' after device wildcard.");
+
+            Parser::flags.devices_initialised = true;
+            std::vector<std::string> arr = Parser::Utilities::ParseArray(args);
+            if(Parser::hasError()){ return; }
+            if(arr.size() > 6) throw vmc::ParserError("Too many devices listed. (" + std::to_string(arr.size()) + "/6)");
+            for(std::size_t i = 0; i < arr.size(); i++)
             {
-                if(parser->globals.references.exists(arr[i])){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + arr[i] + "\" already exists.")); }
-                parser->globals.references.add(arr[i], available_devices[i], identifier_type::dev);
+                if(Parser::ident::exists(arr[i])){ throw vmc::DuplicateReferenceError(arr[i]); }
+                Parser::registerIdentifier(Identifier::Type::DEVICE, Parser::device::next(), arr[i]);
             }
             return;
         }
 
-        parser->set_error(vmc::GenericError(parser->get_current_line(), "Device assignment error"));
+        throw vmc::ParserError(std::string("Unknown device target '") + target + "'.");
     }
-    void reg(vmc::string_array& args, Parser* parser)
+    void reg(vmc::ArgumentList args)
     {
-        if(args.empty()){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Register names not provided")); return; }
-        std::string& first = args.v_shift();
-        if(starts_with(first, "["))
+        if(args.isEmpty()){ throw vmc::ParserError("Expected register declaration: reg <name> or reg [name1, name2, ...]"); }
+        const std::string& first = args.peek();
+        if(!first.empty() && first.front() == '[')
         {
-            vmc::string_array arr = parser->utils.parse_array(args);
-            if(parser->has_error()){ return; }
+            std::vector<std::string> arr = Parser::Utilities::ParseArray(args);
+            if(Parser::hasError()){ return; }
             for(auto &entry : arr)
             {
-                const std::string& free_reg = parser->reg_get_free();
-                if(parser->globals.references.exists(entry)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + entry + "\" already exists.")); }
-                parser->globals.references.add(entry, free_reg, identifier_type::reg);
+                std::string free_reg = Parser::ident::getNextFreeRegister();
+                if(Parser::ident::exists(entry)){ throw vmc::DuplicateReferenceError(entry); }
+                Parser::registerIdentifier(Identifier::Type::REGISTER, free_reg, entry);
             }
             return;
         }
 
-        if(parser->globals.references.exists(first)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + first + "\" already exists.")); }
-        std::string reg = parser->reg_get_free();
-        parser->globals.references.add(first, reg, identifier_type::reg);
+        if(Parser::ident::exists(first)){ throw vmc::DuplicateReferenceError(first); }
+        std::string reg = Parser::ident::getNextFreeRegister();
+        Parser::registerIdentifier(Identifier::Type::REGISTER, reg, first);
     }
-    void set(vmc::string_array& args, Parser* parser)
+    void set(vmc::ArgumentList args)
     {
-        std::string& reg = args.v_shift();
-        args.v_shift(); // Discard next token
-        std::string& value = args.v_shift();
+        std::string reg = args.next();
+        if(!args.expect("=")){ throw vmc::ParserError("Expected '=' in assignment."); }
+        std::string value = args.next();
 
-        reg = parser->ref_get(reg);
-        value = parser->utils.parse_value(value);
+        if(!Parser::ident::exists(reg))
+        {
+            throw vmc::UnknownIdentifier(reg);
+        }
 
-        parser->output.add_end(ins::move(reg, value));
+        if(value.empty())
+        {
+            throw vmc::MissingValueError();
+        }
+
+        reg = Parser::ident::getTarget(reg);
+        value = Parser::Utilities::ParseValue(value);
+
+        Parser::output.push_back(ins::move(reg, value));
     }
-    void label(vmc::string_array& args, Parser* parser)
+    void label(vmc::ArgumentList args)
     {
-        std::string& name = args.v_shift();
-        if(name.empty()){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Label name required")); return; }
-        parser->globals.register_label(name);
+        const std::string& name = args.next();
+        if(name.empty()){ throw vmc::ParserError("Label name required"); }
+        Parser::registerLabel(name);
 
-        parser->output.add_end(ins::label(name));
+        Parser::output.push_back(ins::label(name));
     }
-    void eport(vmc::string_array& args, Parser* parser)
+    void eport(vmc::ArgumentList args)
     {
-        Device target = parser->utils.parse_device(args.v_shift());
-        if(parser->has_error()){ return; }
-        args.v_shift(); // Discard next token
-        std::string& value = args.v_shift();
+        Device target = Parser::Utilities::ParseDevice(args.next());
+        if(Parser::hasError()){ return; }
+        if(!args.expect("=")){ throw vmc::ParserError("Expected '=' in export command."); }
+        std::string value = args.next();
+        
+        if(value.empty())
+        {
+            throw vmc::MissingValueError();
+        }
 
-        value = parser->utils.parse_value(value);
+        value = Parser::Utilities::ParseValue(value);
 
         if(target.is_prefabhash)
         {
-            parser->output.add_end(ins::sb(target.name, target.variable, value));
+            Parser::output.push_back(ins::sb(target.name, target.variable, value));
             return;
         }
 
-        parser->output.add_end(ins::s(target.name, target.variable, value));
+        Parser::output.push_back(ins::s(target.name, target.variable, value));
     }
-    void wait(vmc::string_array& args, Parser* parser)
+    void wait(vmc::ArgumentList args)
     {
-        if(args.empty()){ parser->output.add_end(ins::yld()); return; }
-        // The first argument is the time to sleep
-        parser->output.add_end(ins::sleep(args[0]));
+        if(args.isEmpty())
+            Parser::output.push_back(ins::yld());
+        else
+            // The first argument is the time to sleep
+            Parser::output.push_back(ins::sleep(args[0]));
     }
-    void move(vmc::string_array& args, Parser* parser)
+    void move(vmc::ArgumentList args)
     {
-        std::string& lines = args.v_shift();
-        std::string& condition = args.v_shift();
+        const std::string& lines = args.next_checked("Number of lines to move not found.");
 
-        if(condition.empty()){ parser->output.add_end(ins::jr(lines)); return; }
+        if(!args.hasNext()){ Parser::output.push_back(ins::jr(lines)); return; }
+        if(!args.expect("if")){ throw vmc::ParserError("Expected 'if' in move condition."); }
 
-        std::string& reg = args.v_shift();
-        std::string& compare = args.v_shift();
-        std::string& value = args.v_shift();
+        std::string reg = args.next();
+        const std::string& compare = args.next();
+        const std::string& value = args.next();
 
-        reg = parser->ref_get(reg);
-        parser->output.add_end(BR_compare(compare, reg, value, lines));
+        if(!Parser::ident::exists(reg))
+        {
+            throw vmc::UnknownIdentifier(reg);
+        }
+
+        if(!syntax::logic::isValidOperation(compare))
+        {
+            throw vmc::InvalidComparatorError(compare);
+        }
+
+        if(value.empty())
+        {
+            throw vmc::ParserError("Missing constant.");
+        }
+
+        reg = Parser::ident::getTarget(reg);
+        Parser::output.push_back(Utilities::BR_compare(compare, reg, value, lines));
     }
-    void math(vmc::string_array& args, Parser* parser)
+    void math(vmc::ArgumentList args)
     {
-        std::string& reg = args.v_shift();
-        std::string& set_op = args.v_shift();
-        std::string& var1 = args.v_shift();
+        std::string reg = args.next();
+        const std::string& set_op = args.next();
+        std::string var1 = args.next();
         std::string op;
         std::string var2;
         bool is_math_function = false;
@@ -136,240 +194,347 @@ namespace c_commands
         }
         else if(set_op == "=")
         {
-            if(std::find(math_functions.begin(), math_functions.end(), var1) == math_functions.end())
+            if(!syntax::math::isFunction(var1))
             {
-                op = args.v_shift();
-                var2 = args.v_shift();
+                op = args.next();
+                var2 = args.next();
             }
             else
             {
                 op = var1;
-                if(args.v_shift() != "<-"){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Invalid math function call")); }
-                var1 = args.v_shift();
+                if(!args.expect("<-")){ throw vmc::ParserError("Invalid math function call"); }
+                var1 = args.next();
                 is_math_function = true;
             }
         }
         else
         {
-            parser->set_error(vmc::InvalidMathOpError(parser->get_current_line(), set_op));
-            return;
+            throw vmc::InvalidMathOpError(set_op);
         }
 
-        reg = parser->ref_get(reg);
-        var1 = parser->utils.parse_value(var1);
+        if(is_math_function && var1.empty())
+        {
+            throw vmc::MissingValueError();
+        }
+
+        if(!is_math_function && var2.empty())
+        {
+            throw vmc::MissingValueError();
+        }
+
+        if(!Parser::ident::exists(reg))
+        {
+            throw vmc::UnknownIdentifier(reg);
+        }
+
+        reg = Parser::ident::getTarget(reg);
+        var1 = Parser::Utilities::ParseValue(var1);
 
         if(!is_math_function)
         {
-            var2 = parser->utils.parse_value(var2);
-            if(operations.find(op) == operations.end()){ parser->set_error(vmc::InvalidMathOpError(parser->get_current_line(), op)); return; }
-            op = operations.at(op);
-            parser->output.add_end(ins::math(op, reg, var1, var2));
+            var2 = Parser::Utilities::ParseValue(var2);
+            if(!syntax::math::isValidSymbol(op)) throw vmc::InvalidMathOpError(op);
+            op = syntax::math::toInstruction(op);
+            Parser::output.push_back(ins::math(op, reg, var1, var2));
             return;
         }
 
-        parser->output.add_end(ins::math_func(op, reg, var1));
+        Parser::output.push_back(ins::math_func(op, reg, var1));
     }
-    void jump(vmc::string_array& args, Parser* parser)
+    void jump(vmc::ArgumentList args)
     {
-        args.v_shift(); // Discard first token
-        std::string& label = args.v_shift();
+        if(!args.expect("=>")){ throw vmc::ParserError("Expected '=>' in jump command."); }
+        const std::string& label = args.next();
 
-        if(!parser->globals.label_exists(label)){ parser->globals.unresolved_labels.push_back(vmc::Line{parser->get_current_line(), label}); }
+        if(!Parser::label::exists(label)){ Parser::label::expect(label); }
 
-        parser->output.add_end(ins::j(label));
+        Parser::output.push_back(ins::j(label));
     }
-    void import(vmc::string_array& args, Parser* parser)
+    void import(vmc::ArgumentList args)
     {
-        std::string& reg = args.v_shift();
-        args.v_shift(); // Discard next token
-        Device target = parser->utils.parse_device(args.v_shift());
-        if(parser->has_error()){ return; }
+        std::string reg = args.next();
+        if(!args.expect("=")){ throw vmc::ParserError("Expected '=' in import command."); }
+        Device target = Parser::Utilities::ParseDevice(args.next());
+        if(Parser::hasError()){ return; }
 
-        reg = parser->ref_get(reg);
+        if(!Parser::ident::exists(reg))
+        {
+            throw vmc::UnknownIdentifier(reg);
+        }
 
-        parser->output.add_end(ins::l(reg, target.name, target.variable));
+        reg = Parser::ident::getTarget(reg);
+
+        Parser::output.push_back(ins::l(reg, target.name, target.variable));
     }
-    void branch(vmc::string_array& args, Parser* parser)
+    void branch(vmc::ArgumentList args)
     {
-        args.v_shift(); // Discard first token
-        std::string& label = args.v_shift();
-        std::string& condition = args.v_shift();
+        if(!args.expect("=>"))
+            throw vmc::ParserError("Expected '=>' in branch command.");
 
-        if(condition.empty()){ return; }
+        const std::string& label = args.next_checked("Missing branch destination label.");
+        if(!args.expect("if"))
+            throw vmc::ParserError("Expected 'if' in branch command.");
 
-        std::string& var1 = args.v_shift();
-        std::string& compare = args.v_shift();
-        std::string& var2 = args.v_shift();
+        std::string var1 = args.next();
+        const std::string& compare = args.next();
+        std::string var2 = args.next();
 
-        var1 = parser->utils.parse_value(var1);
-        var2 = parser->utils.parse_value(var2);
+        if(var1.empty())
+        {
+            throw vmc::MissingValueError();
+        }
 
-        parser->output.add_end(B_compare(compare, var1, var2, label));
+        if(var2.empty())
+        {
+            throw vmc::MissingValueError();
+        }
+
+        var1 = Parser::Utilities::ParseValue(var1);
+        var2 = Parser::Utilities::ParseValue(var2);
+
+        if(!syntax::logic::isValidOperation(compare))
+        {
+            throw vmc::InvalidComparatorError(compare);
+        }
+
+        if(!Parser::label::exists(label)){ Parser::label::expect(label); }
+
+        Parser::output.push_back(Utilities::B_compare(compare, var1, var2, label));
     }
-    void trans(vmc::string_array& args, Parser* parser)
+    void trans(vmc::ArgumentList args)
     {
-        if(!parser->flags.using_carry){ parser->set_error(vmc::GenericError(parser->get_current_line(), "You must specify the use of carry to use the trans command (#using carry)")); return; }
+        if(!Parser::flags.using_carry){ throw vmc::ParserError("You must specify the use of carry to use the trans command (#using carry)"); }
 
-        Device source = parser->utils.parse_device(args.v_shift());
-        if(parser->has_error()){ return; }
+        Device source = Parser::Utilities::ParseDevice(args.next());
+        if(Parser::hasError()){ return; }
 
-        args.v_shift();
+        if(!args.expect("=>")){ throw vmc::ParserError("Expected '=>' in trans command."); }
 
-        Device destination = parser->utils.parse_device(args.v_shift());
-        if(parser->has_error()){ return; }
+        Device destination = Parser::Utilities::ParseDevice(args.next());
+        if(Parser::hasError()){ return; }
 
         std::string eport;
 
         if(destination.is_prefabhash)
         {
-            eport = ins::sb(destination.name, destination.variable, parser->ref_get("carry"));
+            eport = ins::sb(destination.name, destination.variable, Parser::ident::getTarget("carry"));
         }
         else
         {
-            eport = ins::s(destination.name, destination.variable, parser->ref_get("carry"));
+            eport = ins::s(destination.name, destination.variable, Parser::ident::getTarget("carry"));
         }
 
-        std::string eport2 = ins::l(parser->ref_get("carry"), source.name, source.variable);
+        std::string eport2 = ins::l(Parser::ident::getTarget("carry"), source.name, source.variable);
 
-        parser->output.add_end(eport2 + "\n" + eport);
+        Parser::output.push_back(eport2 + "\n" + eport);
     }
-    void p_if(vmc::string_array& args, Parser* parser)
+    void p_if(vmc::ArgumentList args)
     {
-        auto labels = parser->globals.generate_conditional_labels();
-        const std::string& fail_label = labels.fail_label;
+        if(Parser::flags.in_conditional)
+        {
+            throw vmc::ParserError("Nested conditions currently unsupported.");
+        }
+
+        ConditionalInfo labels = Parser::label::generateConditionals();
 
         std::string reg;
         std::string comparator;
         std::string value;
 
-        while(!args.empty())
-        {
-            reg = args.shift();
-            comparator = args.shift();
-            value = args.shift();
-            if(reg.empty() || comparator.empty() || value.empty()){ break; }
+        if(!args.hasNext()) throw vmc::ParserError("'if' keyword must be followed by a condition.");
 
-            reg = parser->ref_get(reg);
-            value = parser->utils.parse_value(value);
-            if(invert_comparator.find(comparator) == invert_comparator.end())
+        while(args.hasNext())
+        {
+            reg = args.next_checked("Missing variable to check.");
+            comparator = args.next_checked("Missing comparator.");
+            value = args.next_checked("Missing value to compare against.");
+
+            if(!Parser::ident::exists(reg))
             {
-                parser->set_error(vmc::GenericError(parser->get_current_line(), "Invalid comparator symbol \"" + comparator + "\""));
-                return;
+                throw vmc::UnknownIdentifier(reg);
             }
-            comparator = invert_comparator.at(comparator);
-            parser->output.add_end(B_compare(comparator, reg, value, fail_label));
-            if(!args.empty())
+
+            reg = Parser::ident::getTarget(reg);
+            value = Parser::Utilities::ParseValue(value);
+            if(!syntax::logic::isValidOperation(comparator))
             {
-                if(includes(combinators, args[0])){ args.shift(); }
+                throw vmc::InvalidComparatorError(comparator);
+            }
+            comparator = syntax::logic::invertRelation(comparator);
+            Parser::output.push_back(Utilities::B_compare(comparator, reg, value, labels.fail_label));
+            if(args.hasNext())
+            {
+                if(syntax::logic::isValidCombinator(args.peek()))
+                    args.next();
             }
         }
 
-        parser->flags.in_conditional = true;
+        Parser::flags.in_conditional = true;
     }
-    void p_else(vmc::string_array& args, Parser* parser)
+    void p_else(vmc::ArgumentList args)
     {
-        if(!parser->flags.in_conditional){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Conditional not initialised correctly")); return; }
+        if(!args.isEmpty())
+            throw vmc::ParserError("Unexpected data after 'else' keyword.");
 
-        parser->flags.is_conditional_else = true;
+        if(!Parser::flags.in_conditional){ throw vmc::ParserError("Conditional not initialised correctly"); }
 
-        parser->output.add_end(ins::j(parser->globals.conditional.end_label));
-        parser->output.add_end(ins::label(parser->globals.conditional.fail_label));
+        Parser::flags.is_conditional_else = true;
+
+        Parser::output.push_back(ins::j(Parser::label::getCurrentConditionals().end_label));
+        Parser::output.push_back(ins::label(Parser::label::getCurrentConditionals().fail_label));
     }
-    void end(vmc::string_array& args, Parser* parser)
+    void end(vmc::ArgumentList args)
     {
-        if(args.empty()){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 1)); return; }
+        const std::string& end_type = args.next_checked("Expected block type after 'end' keyword.");
 
-        if(args[0] == "if")
+        if(end_type == "if")
         {
-            if(!parser->flags.in_conditional){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Conditional not initialised correctly")); return; }
+            if(!Parser::flags.in_conditional)
+                throw vmc::ParserError("Conditional not initialised correctly");
 
-            if(parser->flags.is_conditional_else == false){ parser->output.add_end(ins::label(parser->globals.conditional.fail_label)); return; }
+            Parser::output.push_back(ins::label(
+                Parser::flags.is_conditional_else ?
+                Parser::label::getCurrentConditionals().end_label :
+                Parser::label::getCurrentConditionals().fail_label
+            ));
 
-            parser->flags.in_conditional = false;
-            parser->flags.is_conditional_else = false;
-            parser->output.add_end(ins::label(parser->globals.conditional.end_label));
+            Parser::flags.in_conditional = false;
+            Parser::flags.is_conditional_else = false;
         }
-        else if(args[0] == "sub")
+        else if(end_type == "sub")
         {
-            if(!parser->flags.in_subroutine){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Subroutine not initialised correctly")); return; }
+            if(!Parser::flags.in_subroutine)
+                throw vmc::ParserError("Subroutine not initialised correctly");
             
-            parser->flags.in_subroutine = false;
-            parser->output.add_end(ins::j("ra"));
+            Parser::flags.in_subroutine = false;
+            Parser::output.push_back(ins::j("ra"));
+        }
+        else
+        {
+            throw vmc::ParserError("Unexpected identifier after 'end' keyword.");
         }
     }
-    void xref(vmc::string_array& args, Parser* parser)
+    void xref(vmc::ArgumentList args)
     {
-        if(args.size() < 3){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 3)); return; }
+        if(args.size() < 3){ throw vmc::ParserError("Expected xref command: xref <device.variable> <-|-> <register-or-value>"); }
         
-        Device target = parser->utils.parse_device(args.v_shift());
-        if(parser->has_error()){ return; }
+        Device target = Parser::Utilities::ParseDevice(args.next());
+        if(Parser::hasError()){ return; }
         
-        std::string& direction = args.v_shift();
-        if(direction != "<-" && direction != "->"){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Invalid direction \"" + direction + "\" provided")); return; }
-        std::string& reg = args.v_shift();
+        const std::string& direction = args.next();
+        if(direction != "<-" && direction != "->"){ throw vmc::ParserError("Invalid direction \"" + direction + "\" provided"); }
+        std::string reg = args.next();
 
         if(direction == "->")
         {
-            reg = parser->ref_get(reg);
-            parser->output.add_end(ins::l(reg, target.name, target.variable));
+            if(!Parser::ident::exists(reg))
+            {
+                throw vmc::UnknownIdentifier(reg);
+            }
+
+            reg = Parser::ident::getTarget(reg);
+            Parser::output.push_back(ins::l(reg, target.name, target.variable));
             return;
         }
         // else direction == "<-"
 
-        reg = parser->utils.parse_value(reg);
+        reg = Parser::Utilities::ParseValue(reg);
         if(target.is_prefabhash)
         {
-            parser->output.add_end(ins::sb(target.name, target.variable, reg));
+            Parser::output.push_back(ins::sb(target.name, target.variable, reg));
             return;
         }
 
-        parser->output.add_end(ins::s(target.name, target.variable, reg));
+        Parser::output.push_back(ins::s(target.name, target.variable, reg));
     }
-    void p_const(vmc::string_array& args, Parser* parser)
+    void p_const(vmc::ArgumentList args)
     {
         // Const will create a reference to a value without using a register
-        if(args.size() < 3){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 3)); return; }
+        if(args.size() < 3){ throw vmc::ParserError("Expected const declaration: const <name> = <value>"); }
         
-        std::string& const_name = args.v_shift();
-        args.v_shift();
-        std::string& value = args.v_shift();
+        const std::string& const_name = args.next();
+        if(!args.expect("=")){ throw vmc::ParserError("Expected '=' in const command."); }
+        const std::string& value = args.next();
 
-        if(parser->globals.references.exists(const_name)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Reference with name \"" + const_name + "\" already exists.")); }
-        parser->globals.references.add(const_name, value, identifier_type::constant);
+        if(Parser::ident::exists(const_name)){ throw vmc::DuplicateReferenceError(const_name); }
+        Parser::registerIdentifier(Identifier::Type::CONSTANT, value, const_name);
     }
-    void sub(vmc::string_array& args, Parser* parser)
+    void sub(vmc::ArgumentList args)
     {
-        if(args.empty()){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 1)); return; }
+        if(args.isEmpty()){ throw vmc::ParserError("Expected subroutine declaration: sub <label>"); }
 
-        std::string& label_name = args.v_shift();
+        const std::string& label_name = args.next();
 
-        if(parser->globals.label_exists(label_name)){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Label with name \"" + label_name + "\" already exists.")); return; }
+        if(Parser::label::exists(label_name)){ throw vmc::ParserError("Label with name \"" + label_name + "\" already exists."); }
 
-        parser->flags.in_subroutine = true;        
-        parser->globals.register_label(label_name);
-        parser->output.add_end(ins::label(label_name));
+        Parser::flags.in_subroutine = true;        
+        Parser::registerLabel(label_name);
+        Parser::output.push_back(ins::label(label_name));
     }
-    void call(vmc::string_array& args, Parser* parser)
+    void call(vmc::ArgumentList args)
     {
-        if(args.empty()){ parser->set_error(vmc::InsufficientArgsError(parser->get_current_line(), args.size(), 1)); return; }
+        if(args.isEmpty()){ throw vmc::ParserError("Expected subroutine call: call <label> or call <label> if <left> <comparator> <right>"); }
 
-        std::string& label_name = args.v_shift();
+        const std::string& label_name = args.next();
 
-        if(!parser->globals.label_exists(label_name)){ parser->globals.unresolved_labels.push_back(vmc::Line{parser->get_current_line(), label_name}); }
+        if(!Parser::label::exists(label_name)){ Parser::label::expect(label_name); }
 
-        if(args.size() < 2){ parser->output.add_end(ins::jal(label_name)); return; }
+        if(args.size() < 2){ Parser::output.push_back(ins::jal(label_name)); return; }
 
-        args.v_shift(); // return "if"
+        if(!args.expect("if")){ throw vmc::ParserError("Expected 'if' in call condition."); }
 
-        std::string& var1 = args.v_shift();
-        std::string& compare = args.v_shift();
-        std::string& var2 = args.v_shift();
+        std::string var1 = args.next();
+        const std::string& compare = args.next();
+        std::string var2 = args.next();
 
-        if(comparators.find(compare) == comparators.end()){ parser->set_error(vmc::GenericError(parser->get_current_line(), "Invalid comparator symbol \"" + compare + "\"")); return; }
+        if(!syntax::logic::isValidOperation(compare)) { throw vmc::InvalidComparatorError(compare); }
 
-        var1 = parser->utils.parse_value(var1);
-        var2 = parser->utils.parse_value(var2);
+        if(var1.empty())
+        {
+            throw vmc::MissingValueError();
+        }
 
-        parser->output.add_end(RA_compare(compare, var1, var2, label_name));
+        if(var2.empty())
+        {
+            throw vmc::MissingValueError();
+        }
+
+        var1 = Parser::Utilities::ParseValue(var1);
+        var2 = Parser::Utilities::ParseValue(var2);
+
+        Parser::output.push_back(Utilities::RA_compare(compare, var1, var2, label_name));
     }
 };
+
+static const std::unordered_map<std::string_view, Cmd::Function> commands_map =
+{
+    { "dev", c_commands::dev },
+    { "reg", c_commands::reg },
+    { "set", c_commands::set },
+    { "label", c_commands::label },
+    { "export", c_commands::eport },
+    { "wait", c_commands::wait },
+    { "move", c_commands::move },
+    { "math", c_commands::math },
+    { "jump", c_commands::jump },
+    { "import", c_commands::import },
+    { "branch", c_commands::branch },
+    { "trans", c_commands::trans },
+    { "if", c_commands::p_if },
+    { "else", c_commands::p_else },
+    { "end", c_commands::end },
+    { "xref", c_commands::xref },
+    { "const", c_commands::p_const },
+    { "sub", c_commands::sub },
+    { "call", c_commands::call }
+};
+
+bool Cmd::Exists(std::string_view cmd_str) noexcept
+{
+    return commands_map.find(cmd_str) != commands_map.end();
+}
+
+const Cmd::Function& Cmd::Get(std::string_view cmd_str)
+{
+    return commands_map.at(cmd_str);
+}

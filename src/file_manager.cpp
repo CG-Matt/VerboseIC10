@@ -2,54 +2,52 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include "file_manager.h"
+#include <filesystem>
+#include "file_manager.hpp"
 
-std::vector<vmc::Line> read_file(const std::string& file_path, const std::string &file_name)
+Buffer<char> ReadFile(const char* path)
 {
-    std::ifstream file(file_path + "/" + file_name + ".vic10");
-    if(!file.is_open())
+    // Initialise buffer with file size as its size
+    Buffer<char> buffer(std::filesystem::file_size(path));
+
+    std::ifstream file(path, std::ios::binary);
+    if(!file)
     {
-        throw std::runtime_error("Failed to open file: " + file_name);
+        throw std::runtime_error(std::string("Failed to open file: ") + path);
     }
 
-    std::vector<vmc::Line> file_contents;
-    std::string line;
-
-    uint16_t line_idx = 0;
-    while(getline(file, line))
+    if(!file.read(buffer.data, buffer.size))
     {
-        file_contents.push_back(vmc::Line{line_idx, line});
-        line_idx++;
+        throw std::runtime_error(std::string("Failed to read file: ") + path);
     }
+
+    return buffer;
+}
+
+std::string StripName(const char* path)
+{
+    std::filesystem::path file_path(path);
+
+    return file_path.stem().string();
+}
+
+bool WriteFile(const std::string& file_path, const std::string& file_name, const std::vector<std::string>& data)
+{
+    std::ofstream file(file_path + "/" + file_name + ".ic10");
+    if(!file.is_open()) return false;
+
+    for(auto& line : data)
+        file << line << "\n";
 
     file.close();
-
-    return file_contents;
+    return true;
 }
 
-int write_file(const std::string& file_path, const std::string& file_name, const std::vector<std::string>& data)
+Config ReadConfigurationFile(const char* path)
 {
-    std::ofstream file(file_path + "/" + file_name + ".ic10", std::ofstream::out);
-    if(file.is_open())
-    {
-        for(auto& line : data)
-        {
-            file << line << "\n";
-        }
-        file.close();
-        return 0;
-    }
-    else
-    {
-        return 1;
-    }
-}
+    Config config {};
 
-Config read_config_file()
-{
-    Config config;
-
-    std::ifstream file("./parser.config");
+    std::ifstream file{ std::filesystem::path(path) };
     if(!file.is_open())
     {
         throw std::runtime_error("Failed to open config file, please ensure \"parser.config\" is in the same directory as the executable");

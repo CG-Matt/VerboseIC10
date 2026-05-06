@@ -1,169 +1,93 @@
 #include <string>
 #include <vector>
+#include <unordered_set>
 #include <algorithm>
-#include "data_structs.h"
-#include "commands.h"
-#include "parser.h"
-#include "constants.h"
-#include "utils.h"
+#include <stdexcept>
+#include "data_structs.hpp"
+#include "commands.hpp"
+#include "parser.hpp"
+#include "utils.hpp"
+#include "syntax.hpp"
 
-static const short version = 4;
-
-PReference::PReference(const std::string& internal, const std::string& external)
-{
-    m_internal = internal;
-    m_external = external;
-}
-
-void ParserReferences::add(const std::string& name, const std::string& value, identifier_type type)
-{
-    m_definitions.insert({name, Identifier{type, value}});
-    if(type == identifier_type::reg){ m_free_register_offset++; }
-}
-void ParserReferences::add_end(const std::string& name, const std::string& value, identifier_type type)
-{
-    m_definitions.insert({name, Identifier{type, value}});
-    if(type == identifier_type::reg){ m_free_register_end--; }
-}
-/*Checks if a reference with the supplied external name exists*/
-bool ParserReferences::exists(const std::string& name) const
-{
-    return m_definitions.find(name) != m_definitions.end();
-}
-std::string ParserReferences::get(const std::string& name) const
-{
-    return m_definitions.at(name).m_value;
-}
-identifier_type ParserReferences::get_type(const std::string& name) const
-{
-    return m_definitions.at(name).m_type;
-}
-const std::string ParserReferences::get_free() // Needs fixing
-{
-    if(m_free_register_offset > m_free_register_end){ return ""; }
-    return valid_registers.at(m_free_register_offset);
-}
-
-
-
-ConditionalInfo ParserGlobals::generate_conditional_labels()
-{
-    int current_index = conditional.idx;
-    conditional.idx++;
-    conditional.pass_label = "cp" + std::to_string(current_index);
-    conditional.fail_label = "cf" + std::to_string(current_index);
-    conditional.end_label  = "ce" + std::to_string(current_index);
-
-    register_label({ conditional.pass_label, conditional.fail_label, conditional.end_label });
-
-    return conditional;
-}
-void ParserGlobals::register_label(const std::string& label)
-{
-    this->labels.push_back(label);
-
-    if(this->unresolved_labels.empty()){ return; }
-
-    std::vector<vmc::Line>::iterator it = this->unresolved_labels.begin();
-    while(it != this->unresolved_labels.end())
-    {
-        auto it = std::find_if(this->unresolved_labels.begin(), this->unresolved_labels.end(), [&label](const vmc::Line& line)
-        {
-            return line.m_data == label;
-        });
-        if(it == this->unresolved_labels.end()){ break; }
-
-        this->unresolved_labels.erase(it);
-    }
-}
-void ParserGlobals::register_label(const std::vector<std::string>& labels)
-{
-    for(auto& label : labels)
-    {
-        this->labels.push_back(label);
-
-        if(this->unresolved_labels.empty()){ return; }
-
-        std::vector<vmc::Line>::iterator it = this->unresolved_labels.begin();
-        while(it != this->unresolved_labels.end())
-        {
-            auto it = std::find_if(this->unresolved_labels.begin(), this->unresolved_labels.end(), [&label](const vmc::Line& line)
-            {
-                return line.m_data == label;
-            });
-            if(it == this->unresolved_labels.end()){ break; }
-
-            this->unresolved_labels.erase(it);
-        }
-    }
-}
-bool ParserGlobals::label_exists(const std::string& label)
-{
-    return includes(labels, label);
-}
-
-
-
-void ParserUtils::set_parent(Parser* parent){ m_parent = parent; }
-/*
-    Parses the provided device into a name and variable and whether or not it is a PrefabHash.
-    If an error occurs it adds it to m_parent->errors and sets the parsers error flag.
-*/
-Device ParserUtils::parse_device(std::string& device_in)
+Device Parser::Utilities::ParseDevice(std::string_view device_in)
 {
     Device device_out;
 
-    if(starts_with(device_in, "@")) // Alias for PrefabHash
+    if(device_in.empty())
     {
-        if(includes(device_in, '.'))
+        Parser::setError(vmc::GenericError("Cannot parse empty device string"));
+        return device_out;
+    }
+
+    if(device_in.front() == '@') // Alias for PrefabHash
+    {
+        if(device_in.find('.') != device_in.npos)
         {
-            m_parent->set_error(vmc::GenericError(m_parent->get_current_line(), "A device cannot have a prefix and a variable name defined. (Excluding * for PrefabHash use)"));
+            Parser::setError(vmc::GenericError("A device cannot have a prefix and a variable name defined. (Excluding * for PrefabHash use)"));
             return device_out;
         }
-        device_in.erase(device_in.begin());
-        device_out.name = m_parent->globals.references.get(device_in);
-        if(device_out.name.empty()){ m_parent->set_error(vmc::UndefinedDeviceError(m_parent->get_current_line(), device_in)); }
+        device_in.remove_prefix(1);
+
+        if(!Parser::ident::exists(device_in) || Parser::ident::getType(device_in) != Identifier::Type::DEVICE)
+            throw vmc::UnknownIdentifier(std::string(device_in));
+
+        device_out.name = Parser::ident::getTarget(device_in);
         device_out.variable = "PrefabHash";
         return device_out;
     }
-    if(starts_with(device_in, "*")) // Use prefabhash
+    if(device_in.front() == '*') // Use prefabhash
     {
-        device_in.erase(device_in.begin());
+        device_in.remove_prefix(1);
         device_out.is_prefabhash = true;
     }
 
-    /*Check if the device variable requested is valid*/
-    if(!includes(device_in, '.'))
+    std::vector<std::string> data = SplitString(device_in, '.');
+    
+    if(data.size() != 2)
     {
-        m_parent->set_error(vmc::GenericError(m_parent->get_current_line(), "Inavlid device \"" + device_in + "\""));
+        Parser::setError(vmc::GenericError("Invalid device \"" + std::string(device_in) + "\""));
         return device_out;
     }
 
-    std::vector<std::string> data = split_string(device_in, '.');
-    device_out.name = m_parent->globals.references.get(data[0]);
-    if(device_out.name.empty()){ m_parent->set_error(vmc::UndefinedDeviceError(m_parent->get_current_line(), data[0])); }
+    if(!Parser::ident::exists(data[0]))
+    {
+        Parser::setError(vmc::GenericError("Invalid device \"" + std::string(device_in) + "\""));
+        return device_out;
+    }
+
+    device_out.name = Parser::ident::getTarget(data[0]);
+    if(device_out.name.empty()) throw vmc::UnknownIdentifier(data[0]);
     device_out.variable = data[1];
     return device_out;
 }
-/*
-    Parses the provided string array view into a std::vector<std::string>.
-    If an error occurs it adds it to m_parent->errors and sets the parsers error flag.
-*/
-std::vector<std::string> ParserUtils::parse_array(const vmc::string_array_view& view)
+std::vector<std::string> Parser::Utilities::ParseArray(vmc::ArgumentList arguments)
 {
-    std::string line = join_string(view); // Turn the array into a string
+    std::string line;
+
+    // Turn the array into a string
+    while(arguments.hasNext()) line += arguments.next();
     
-    if(!starts_with(line, "[")) // Return error if first char does not open array
+    if(line.empty())
     {
-        m_parent->set_error(vmc::GenericError(m_parent->get_current_line(), "First character does not open array."));
+        Parser::setError(vmc::GenericError("No array data to parse."));
         return std::vector<std::string>();
     }
 
-    if(!includes(line, ']')) // Return error if no array terminator is found
+    if(line.front() != '[') // Return error if first char does not open array
     {
-        m_parent->set_error(vmc::GenericError(m_parent->get_current_line(), "No array terminator found. \"]\" expected."));
+        Parser::setError(vmc::GenericError("First character does not open array."));
         return std::vector<std::string>();
     }
+
+    // Technically this has different functionality to the original,
+    // but this needs to be reworked anyways because it does not function properly.
+    if(line.back() != ']') // Return error if array does not end with a ']' character.
+    {
+        Parser::setError(vmc::GenericError("No array terminator found at end. \"]\" expected."));
+        return std::vector<std::string>();
+    }
+
+    // Should also perform checks to see if we have more than 1 opening and closing brackets
 
     size_t terminator_idx = line.find_first_of(']');
     if(terminator_idx != line.size())
@@ -173,155 +97,403 @@ std::vector<std::string> ParserUtils::parse_array(const vmc::string_array_view& 
 
     line.erase(line.begin());
     line.erase(line.end() - 1);
-    return split_string(line, ',');
-}
-std::string ParserUtils::parse_value(const std::string& value)
-{
-    if(is_boolean(value)){ return parse_boolean(value); }
-    if(is_number(value)){ return value; }
-    if(m_parent->globals.references.exists(value)){ return m_parent->globals.references.get(value); }
-
-    m_parent->set_error(vmc::UndefinedRegisterError(m_parent->get_current_line(), value));
-    return value;
+    return SplitString(line, ',');
 }
 
-
-
-Parser::Parser(std::vector<vmc::Line> &file_contents)
+std::string Parser::Utilities::ParseValue(const std::string& value)
 {
-    // Initialise utils
-    this->utils.set_parent(this);
-    // Initialise globals
-    p_init_globals();
-    // Parse file
-    p_parse_file(file_contents);
-    // Parse directives
-    p_parse_directives();
+    if(syntax::isBoolean(value)){ return ParseBoolean(value); }
+    if(syntax::isNumber(value)){ return value; }
+    
+    // This throws if value is not an identifier.
+    return Parser::ident::getTarget(value);
 }
-void Parser::p_init_globals()
+
+std::string Parser::Utilities::ParseBoolean(std::string_view boolean){ return boolean == "true" ? "1" : "0"; }
+
+namespace Parser::state
 {
-    globals.references.add("Self", "db", identifier_type::dev);
-}
-void Parser::p_parse_file(std::vector<vmc::Line>& file_contents)
+    static std::size_t syntax_version = 0;
+    static std::unordered_set<std::string_view> _available_devices;
+    static std::unordered_set<std::string_view> _available_registers;
+};
+
+namespace Parser::ident
 {
-    this->m_input.reserve(file_contents.size());
-    for(auto& line : file_contents)
+    static std::unordered_map<std::string, Identifier> _output_bindings;
+};
+
+namespace Parser::label
+{
+    static std::unordered_set<std::string> _registered_labels;
+    static std::vector<vmc::IndexedStr> _unresolved_labels;
+    static std::size_t _conditional_label_index = 0;
+    static ConditionalInfo _conditional;
+};
+
+namespace Parser
+{
+    static std::vector<std::string> errors;
+    static std::vector<ProgramLine> directives;
+    static std::vector<ProgramLine> input;
+    static std::size_t current_line = 1;
+    static const std::string _empty_str = "";
+
+    static void _ParseFile(const Buffer<char>& file_contents)
     {
-        std::string& text = line.m_data;
+        const char* start = file_contents.data;
+        std::size_t length = 0;
+        std::size_t line_index = 1;
 
-        if(text.empty()){ continue; } // Ensure that the line is not empty
-        if(text.find_first_not_of(' ') == std::string::npos){ continue; } // Ensure that the line isnt just spaces
-
-        while(starts_with(text, " ")){ text.erase(text.begin()); }
-
-        if(starts_with(text, "$")){ continue; } // Ignore Comments
-        if(starts_with(text, "#"))
+        for(std::size_t i = 0; i < file_contents.size; i++)
         {
-            this->m_directives.push_back(ProgramLine(text, line.m_idx+1));
-            continue;
-        }
+            // Skip any blank characters
+            while(i + 1 < file_contents.size && std::isblank(file_contents[i])) i++;
 
-        this->m_input.push_back(ProgramLine(text, line.m_idx+1));
-    }
-}
-void Parser::p_parse_directives()
-{
-    for(auto &rdirective : m_directives)
-    {
-        std::string& cur_directive = rdirective.m_first;
-        vmc::string_array& args = rdirective.m_args;
-
-        if(cur_directive == "version")
-        {
-            if(args.empty()){ this->set_error(vmc::GenericError(rdirective.m_line_idx, "No version number provided")); continue; }
-            flags.version = std::stoi(args[0]);
-        }
-        if(cur_directive == "using")
-        {
-            if(args.empty()){ this->set_error(vmc::GenericError(rdirective.m_line_idx, "No module name provided")); continue; }
-            std::string &feature = args[0];
-
-            if(feature == "carry")
+            // Look for next line
+            if(file_contents[i] == '\n')
             {
-                globals.references.add_end("carry", "r15", identifier_type::reg);
-                flags.available_registers--;
-                flags.using_carry = true;
+                line_index++;
+                continue;
+            }
+
+            // If other whitespace character, just loop back
+            if(std::isspace(file_contents[i])) continue;
+
+            if(file_contents[i] == '$')
+            {
+                while(i < file_contents.size && (file_contents[i] == '\t' || !std::iscntrl(file_contents[i]))) i++;
+                i--;
+            }
+
+            else if(file_contents[i] == '#')
+            {
+                start = file_contents.data + i;
+
+                while(
+                    i < file_contents.size &&
+                    file_contents[i] != '$' &&
+                    (file_contents[i] == '\t' || !std::iscntrl(file_contents[i]))
+                ) {
+                    length++;
+                    i++;
+                }
+
+                directives.push_back(ProgramLine(line_index, std::string_view(start, length)));
+                length = 0;
+                i--;
+            }
+            else
+            {
+                start = file_contents.data + i;
+
+                while(
+                    i < file_contents.size &&
+                    file_contents[i] != '$' &&
+                    (file_contents[i] == '\t' || !std::iscntrl(file_contents[i]))
+                ) {
+                    length++;
+                    i++;
+                }
+
+                input.push_back(ProgramLine(line_index, std::string_view(start, length)));
+                length = 0;
+                i--;
             }
         }
     }
-}
-void Parser::parse()
-{
-    if(flags.version != version){ return; }
 
-    this->output.reserve(m_input.size());
+    static void _ParseDirectives(void)
+    {
+        for(auto &rdirective : Parser::directives)
+        {
+            const std::string& cur_directive = rdirective.first;
+            const std::vector<std::string>& args = rdirective.args;
+
+            if(cur_directive == "version")
+            {
+                if(args.empty()){ Parser::setError(rdirective.line_number, vmc::GenericError("No version number provided")); continue; }
+                try
+                {
+                    state::syntax_version = std::stoi(args[0]);
+                }
+                catch(const std::exception& e)
+                {
+                    Parser::setError(rdirective.line_number, vmc::GenericError("Invalid version number formatting")); continue;
+                }
+            }
+            if(cur_directive == "using")
+            {
+                if(args.empty()){ Parser::setError(rdirective.line_number, vmc::GenericError("No module name provided")); continue; }
+                const std::string& feature = args[0];
+
+                if(feature == "carry")
+                {
+                    Parser::registerIdentifier(Identifier::Type::REGISTER, "r15", "carry");
+                    Parser::reg::take("r15");
+                    flags.using_carry = true;
+                }
+            }
+        }
+    }
+};
+
+void Parser::registerIdentifier(Identifier::Type type, std::string_view target, std::string_view name)
+{
+    ident::_output_bindings.insert({ std::string(name), Identifier{ type, std::string(target) } });
+}
+
+std::size_t Parser::getCurrentLine(void)
+{
+    return Parser::current_line;
+}
+
+bool Parser::ident::exists(std::string_view name)
+{
+    return _output_bindings.find(std::string(name)) != _output_bindings.end();
+}
+
+Identifier::Type Parser::ident::getType(std::string_view name)
+{
+    if(!Parser::ident::exists(name)) throw vmc::UnknownIdentifier(std::string(name));
+    return _output_bindings.at(std::string(name)).type;
+}
+
+const std::string& Parser::ident::getTarget(std::string_view name)
+{
+    if(!Parser::ident::exists(name)) throw vmc::UnknownIdentifier(std::string(name));
+    return _output_bindings.at(std::string(name)).target;
+}
+
+std::string Parser::ident::getNextFreeRegister(void)
+{
+    if(!Parser::reg::available())
+    {
+        Parser::setError(vmc::GenericError("Max register limit has been reached"));
+        return _empty_str;
+    }
+    return std::string(Parser::reg::next());
+}
+
+const std::unordered_map<std::string, Identifier>& Parser::ident::getAll(void)
+{
+    return _output_bindings;
+}
+
+void Parser::registerLabel(std::string_view label)
+{
+    label::_registered_labels.insert(std::string(label));
+
+    for(std::size_t i = label::_unresolved_labels.size(); i-- > 0;)
+    {
+        if(label::_unresolved_labels[i].str != label) continue;
+
+        if(i != label::_unresolved_labels.size() - 1)
+            label::_unresolved_labels[i] = std::move(label::_unresolved_labels.back());
+
+        label::_unresolved_labels.pop_back();
+    }
+}
+
+bool Parser::label::exists(std::string_view label)
+{
+    return _registered_labels.find(std::string(label)) != _registered_labels.end();
+}
+
+void Parser::label::expect(std::string_view label)
+{
+    _unresolved_labels.push_back({ Parser::getCurrentLine(), std::string(label) });
+}
+
+ConditionalInfo Parser::label::generateConditionals(void)
+{
+    _conditional.pass_label = "cp" + std::to_string(_conditional_label_index);
+    _conditional.fail_label = "cf" + std::to_string(_conditional_label_index);
+    _conditional.end_label  = "ce" + std::to_string(_conditional_label_index);
+
+    _conditional_label_index++;
+
+    Parser::registerLabel(_conditional.pass_label);
+    Parser::registerLabel(_conditional.fail_label);
+    Parser::registerLabel(_conditional.end_label);
+
+    return _conditional;
+}
+
+const ConditionalInfo& Parser::label::getCurrentConditionals(void)
+{
+    return _conditional;
+}
+
+namespace Parser::device
+{
+    bool available(void)
+    {
+        return !state::_available_devices.empty();
+    }
+
+    void take(std::string_view target)
+    {
+        if(!syntax::devices::isValid(target))
+            throw vmc::ParserError("Cannot reserve invalid device target \"" + std::string(target) + "\".");
+
+        if(state::_available_devices.find(target) == state::_available_devices.end())
+            throw vmc::ParserError("Device target \"" + std::string(target) + "\" is already reserved or unavailable.");
+
+        state::_available_devices.erase(target);
+    }
+
+    std::string_view next(void)
+    {
+        static std::size_t next_device_index = 0;
+        std::string_view next_device;
+
+        do
+        {
+            if(next_device_index >= syntax::devices::count())
+                throw std::runtime_error("Parser::device::next(): No more device targets available.");
+
+            next_device = syntax::devices::getAll()[next_device_index++];
+        }
+        while(state::_available_devices.find(next_device) == state::_available_devices.end());
+
+        state::_available_devices.erase(next_device);
+        return next_device;
+    }
+}
+
+namespace Parser::reg
+{
+    bool available(void)
+    {
+        return !state::_available_registers.empty();
+    }
+
+    void take(std::string_view target)
+    {
+        if(!syntax::registers::isValid(target))
+            throw vmc::ParserError("Cannot reserve invalid register target \"" + std::string(target) + "\".");
+
+        if(state::_available_registers.find(target) == state::_available_registers.end())
+            throw vmc::ParserError("Register target \"" + std::string(target) + "\" is already reserved or unavailable.");
+
+        state::_available_registers.erase(target);
+    }
+
+    std::string_view next(void)
+    {
+        static std::size_t next_register_index = 0;
+        std::string_view next_register;
+
+        do
+        {
+            if(next_register_index >= syntax::registers::count())
+                throw std::runtime_error("Parser::reg::next(): No more register targets available.");
+
+            next_register = syntax::registers::getAll()[next_register_index++];
+        }
+        while(state::_available_registers.find(next_register) == state::_available_registers.end());
+
+        state::_available_registers.erase(next_register);
+        return next_register;
+    }
+}
+
+void Parser::init()
+{
+    // Register available devices
+    for(const std::string_view& dev : syntax::devices::getAll())
+    {
+        state::_available_devices.insert(dev);
+    }
+
+    // Register available registers
+    for(const std::string_view& reg : syntax::registers::getAll())
+    {
+        state::_available_registers.insert(reg);
+    }
+
+    // Initialise globals
+    Parser::registerIdentifier(Identifier::Type::DEVICE, "db", "Self");
+}
+
+void Parser::parse(const Buffer<char>& file_contents)
+{
+    // Parse file
+    Parser::_ParseFile(file_contents);
+    // Parse directives
+    Parser::_ParseDirectives();
+
+    if(Parser::hasError()) return;
+
+    if(state::syntax_version != syntax::getCurrentVersion())
+    {
+        Parser::setError(vmc::GenericError("Version mismatch. Expected: " + std::to_string(syntax::getCurrentVersion()) + ", Found: " + std::to_string(state::syntax_version)));
+        return;
+    }
+
+    Parser::output.reserve(Parser::input.size());
 
     // Calling each command in the file
-    for( auto &rcmd : m_input)
+    for(ProgramLine& rcmd : Parser::input)
     {
-        if(this->has_error()){ break; }
+        if(Parser::hasError()){ break; }
 
-        cmd_func cmd;
+        Cmd::Function command;
 
-        this->m_current_line = rcmd.m_line_idx;
-        if(commands_map.find(rcmd.m_first) == commands_map.end())
+        Parser::current_line = rcmd.line_number;
+        if(!Cmd::Exists(rcmd.first))
         {
-            if(!this->globals.references.exists(rcmd.m_first)){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Command \"" + rcmd.m_first + "\" is not a valid command")); continue; }
+            if(!Parser::ident::exists(rcmd.first)){ Parser::setError(rcmd.line_number, vmc::GenericError("Command \"" + rcmd.first + "\" is not a valid command")); continue; }
             
-            if(this->globals.references.get_type(rcmd.m_first) == identifier_type::constant){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Identifier \"" + rcmd.m_first + "\" is const and cannot be modified.")); continue; }
+            if(Parser::ident::getType(rcmd.first) == Identifier::Type::CONSTANT){ Parser::setError(rcmd.line_number, vmc::GenericError("Identifier \"" + rcmd.first + "\" is const and cannot be modified.")); continue; }
             
-            if(commands_map.find("set") == commands_map.end()){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Call to set command from parser errored")); continue; } // Hopefully will prevent crashes if set is ever removed
-            if(commands_map.find("math") == commands_map.end()){ this->set_error(vmc::GenericError(rcmd.m_line_idx, "Call to math command from parser errored")); continue; } // Hopefully will prevent crashes if math is ever removed
+            if(!Cmd::Exists("set"))  { Parser::setError(rcmd.line_number, vmc::GenericError("'set' command not found."));  continue; } // Hopefully will prevent crashes if set is ever removed
+            if(!Cmd::Exists("math")) { Parser::setError(rcmd.line_number, vmc::GenericError("'math' command not found.")); continue; } // Hopefully will prevent crashes if math is ever removed
             
-            if(rcmd.m_args[0] == "=" && rcmd.m_args.size() == 2){ cmd = commands_map.at("set"); }
-            else{ cmd = commands_map.at("math"); }
-            rcmd.m_args.add_begin(rcmd.m_first);
+            if(!rcmd.args.empty() && rcmd.args[0] == "=" && rcmd.args.size() == 2)
+                command = Cmd::Get("set");
+            else
+                command = Cmd::Get("math");
+            rcmd.args.insert(rcmd.args.begin(), rcmd.first);
         }
         else
+            command = Cmd::Get(rcmd.first);
+
+        vmc::ArgumentList arguments(rcmd.args);
+
+        try { command(arguments); }
+        catch(const vmc::ParserError& error)
         {
-            cmd = commands_map.at(rcmd.m_first);
+            Parser::setError(error.what());
         }
-        cmd(rcmd.m_args, this);
     }
     
-    if(this->has_error()){ return; }
+    if(Parser::hasError()) return;
 
-    if(!this->globals.unresolved_labels.empty())
-    {
-        for(auto& line : this->globals.unresolved_labels)
+    if(Parser::label::_unresolved_labels.empty()) return;
+
+    // Sort unresolved labels by ascending line number
+    std::sort(
+        Parser::label::_unresolved_labels.begin(),
+        Parser::label::_unresolved_labels.end(),
+        [](const vmc::IndexedStr& a, const vmc::IndexedStr& b)
         {
-            this->set_error(vmc::UnregistedLabelError(line.m_idx, line.m_data));
+            return a.line_number < b.line_number;
         }
-    }
+    );
+
+    for(auto& line : Parser::label::_unresolved_labels)
+        Parser::setError(line.line_number, vmc::UnregisteredLabelError(line.str));
 }
-/*Returns the current line number*/
-uint16_t Parser::get_current_line() const { return m_current_line; }
-/*Adds the provided error to the errors list and sets the has_error flag.*/
-void Parser::set_error(std::string error)
+
+void Parser::setError(std::string error)
 {
-    this->m_errors.add_end(error);
-    this->flags.has_error = true;
+    Parser::errors.push_back(std::string("(") + std::to_string(Parser::getCurrentLine()) + ") " + error);
 }
-/*Returns the state of the parsers has_error flag.*/
-bool Parser::has_error() const { return this->flags.has_error; }
-/*Returns a read only reference to the errors.*/
-const vmc::string_array& Parser::get_errors() const { return this->m_errors; }
-/*
-    Wrapper for parser->globals.references.get().
-    If a reference is not found it sets the parsers error flag.
-*/
-std::string Parser::ref_get(const std::string& external_name)
+void Parser::setError(std::size_t index, std::string error)
 {
-    if(!this->globals.references.exists(external_name)){ this->set_error(vmc::UndefinedRegisterError(this->get_current_line(), external_name)); }
-    return this->globals.references.get(external_name);
+    Parser::errors.push_back(std::string("(") + std::to_string(index) + ") " + error);
 }
-/*
-    Wrapper for parser->globals.references.get_free().
-    If a register is not available it sets the parsers error flag.
-*/
-std::string Parser::reg_get_free()
-{
-    std::string reg = this->globals.references.get_free();
-    if(reg.empty()){ this->set_error(vmc::GenericError(this->get_current_line(), "Max register limit has been reached")); }
-    return reg;
-}
+bool Parser::hasError() { return Parser::errors.size() > 0; }
+const std::vector<std::string>& Parser::getErrors() { return Parser::errors; }
