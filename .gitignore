@@ -1,4 +1,7 @@
 .vscode
+build
+*.ic10
+*.vic10
+!example.vic10
 programs_ignore
-main
 src/testing

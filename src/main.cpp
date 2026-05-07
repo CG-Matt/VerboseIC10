@@ -1,67 +1,64 @@
-#include <iostream>
 #include <string>
 #include <vector>
-#include "file_manager.h"
-#include "parser.h"
-#include "utils.h"
-#include "data_structs.h"
+#include "file_manager.hpp"
+#include "parser.hpp"
+#include "utils.hpp"
 
 int main(int argc, char **argv)
 {
-    std::string file_name;
-
-    if(argc > 1 && sizeof(argv[1]) < 256){ file_name = argv[1]; }
-
-    if(file_name.empty())
+    if(argc < 2)
     {
-        std::cout << "Please provide the name of a file to parse" << std::endl;
+        std::puts("Please provide the name of a file to parse");
         return 1;
     }
 
+    const char* file_name = argv[1];
+
     // Read config file
-    Config config = read_config_file();
+    Config config = ReadConfigurationFile("./parser.config");
 
     // Read file
-    std::vector<vmc::Line> file_contents = read_file(config.in_folder_path, file_name);
+    Buffer<char> file_contents = ReadFile(file_name);
 
     // Parse file
-    Parser parser(file_contents);
-    parser.parse();
+    Parser::init();
+    Parser::parse(file_contents);
 
     // Always log errors if present
-    if(parser.has_error())
+    if(Parser::hasError())
     {
-        std::cout << "ERRORS:" << std::endl;
-        for(auto& err : parser.get_errors())
+        std::puts("ERRORS:");
+        for(const std::string& err : Parser::getErrors())
         {
-            std::cout << "   - " + err << std::endl;
+            std::printf("  - %s\n", err.c_str());
         }
 
         return 1;
     }
 
     // Export file
-    int write_err = write_file(config.out_folder_path, file_name, parser.output);
-    if(write_err > 0){ std::cout << "Error writing to file"; }
+    if(!WriteFile(config.out_folder_path, StripName(file_name), Parser::output)){ std::puts("Error writing to file"); }
 
     // Log data if required
     if(config.log_ref_table)
     {
-        std::cout << "REF_TABLE:" << std::endl;
-        for(auto& def : parser.globals.references.get_all())
+        std::puts("REF_TABLE:");
+        for(auto& def : Parser::ident::getAll())
         {
-            std::cout << "   - " << "Int: " << def.second.m_value << " Ext: " << def.first << std::endl;
+            std::printf("  - Int: %s Ext: %s\n", def.second.target.c_str(), def.first.c_str());
         }
     }
 
     if(config.log_output)
     {
-        std::cout << "OUTPUT:" << std::endl;
-        std::string output_str = join_string(parser.output, "\n");
-        parser.output = split_string(output_str, '\n');
-        for(auto &line : parser.output)
+        // Some of the compiler errors might have newlines.
+        // This ensures that every error gets printed correctly.
+        std::puts("OUTPUT:");
+        std::string output_str = JoinString(Parser::output, "\n");
+        Parser::output = SplitString(output_str, '\n');
+        for(auto &line : Parser::output)
         {
-            std::cout << "   - " + line << std::endl;
+            std::printf("  - %s\n", line.c_str());
         }
     }
     

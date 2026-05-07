@@ -2,10 +2,14 @@
 
 #include <string>
 
-typedef const std::string& str;
-
 namespace ins
 {
+    using str = const std::string&;
+
+    /**
+     * Helpers that format individual IC10 instruction lines.
+     */
+
     // Branch
 
     inline std::string branch(const str comp, const str reg, const str value, const str label){ return "b" + comp + " " + reg + " " + value + " " + label; }
@@ -22,7 +26,7 @@ namespace ins
     inline std::string sub_call(const str comp, const str reg, const str value, const str label){ return "b" + comp + "al " + reg + " " + value + " " + label; }
     inline std::string sub_call_z(const str comp, const str reg, const str label){ return "b" + comp + "zal " + reg + " " + label; }
 
-    // Stack Managment
+    // Stack Management
 
     inline std::string push(const str value){ return "push " + value; }
     inline std::string pop(const str reg){ return "pop " + reg; }

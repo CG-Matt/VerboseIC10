@@ -2,7 +2,7 @@ $ This is a comment. Any line beginning with a "$" will be treated like a commen
 
 
 $ This is a directive.
-$ The version directive lets the comiler know version of VIC10 we are using.
+$ The version directive lets the compiler know version of VIC10 we are using.
 #version 4
 
 
@@ -25,7 +25,7 @@ reg [ counter, var1 ]
 
 $ The dev command lets us define external devices that we will be calling.
 $ We can assign one at a time -> dev d0 example_device
-$ Or provice an array -> dev * = [ example_device1, example_device2, ... ]
+$ Or provide an array -> dev * = [ example_device1, example_device2, ... ]
 $ The amount of devices is limited to the amount specified in the "parser.config" file.
 $ Defining devices using the array method also sets the parsers "devices_initialised" flag
 $ which will cause the program to error if you try to define any more devices.
@@ -37,7 +37,7 @@ $ Labels allow you to jump execution points by going to them using the jump or b
 label reset
 
 
-$ DEPRICATED
+$ DEPRECATED
 $ The set command lets you change the value of a register
 set counter = 0
 
@@ -47,7 +47,7 @@ counter = 1
 
 
 
-$ The const command lets up define constants which we can use throughout our program.
+$ The const command lets us define constants which we can use throughout our program.
 $ As they are evaluated at compile time and do not change they don't take up a register.
 const example_constant = 100
 
@@ -59,7 +59,7 @@ label main
 
 $ xref lets you load a value from an external device variable into a register
 $ or write the value from a register or a const to a device variable.
-$ It replaces the now depricated "export" and "import" commands
+$ It replaces the now deprecated "export" and "import" commands
 
 $ Loading the var1 register with the value of computer.On
 xref computer.On -> var1
@@ -68,9 +68,9 @@ $ To make code cleaner instead of using computer.PrefabHash we can also use @com
 $ This command will load the computers prefabhash into the var1 register
 xref @computer -> var1
 
-$ We can also export to all conected devices with the same PrefabHash by using the PrefabHash as an export destination prefixed with a "*"
+$ We can also export to all connected devices with the same PrefabHash by using the PrefabHash as an export destination prefixed with a "*"
 $ The following code will export 10 to the Setting variable of all connected computers
-$ "*var1" tells the compiler to use var1 as a PrefabHash. It is up to the user to previosly load the desired PrefabHash into the register.
+$ "*var1" tells the compiler to use var1 as a PrefabHash. It is up to the user to previously load the desired PrefabHash into the register.
 $ In this code it is done by the above command
 xref *var1.Setting <- 10
 
@@ -78,18 +78,18 @@ $ Loading the vending_machine.Setting variable with the value of var1
 xref vending_machine.Setting <- var1
 
 $ Loading the Self.Setting variable with a const value
-$ NOTE: Self is a device definition refering to the unit executing the commands
+$ NOTE: Self is a device definition referring to the unit executing the commands
 xref Self.Setting <- 10
 
 
 
-$ DEPRICATED
+$ DEPRECATED
 $ import lets you load a value from an external device variable into a register
 import var1 = computer.PrefabHash
 
 
 
-$ DEPRICATED
+$ DEPRECATED
 $ export lets you write the value from a register or a const to a device variable.
 export vending_machine.Setting = counter
 
@@ -102,7 +102,7 @@ trans vending_machine.Setting => computer.Setting
 
 
 
-$ DEPRICATED
+$ DEPRECATED
 $ math is used to perform +, -, * and / operations on variables
 $ The math command also supports +=, -=, *= and /= operations
 math counter += 5
@@ -147,17 +147,17 @@ end sub
 
 
 
-$ The call command lets up call a subroutine from anywhere in our program.
-$ After the subroutine is executred the program will continue execution after the call command.
+$ The call command lets us call a subroutine from anywhere in our program.
+$ After the subroutine is executed the program will continue execution after the call command.
 call example_subroutine
 
-$ The call command can also accept a conditinal statement to call a subroutine only if a condition is met.
+$ The call command can also accept a conditional statement to call a subroutine only if a condition is met.
 call example_subroutine if counter < 10
 
 
 
 $ POTENTIALLY BUGGY PLEASE AVOID USING
-$ move lets up jump forward or backward a specified number of lines with or without a condition.
+$ move lets us jump forward or backward a specified number of lines with or without a condition.
 $ Positive line numbers result in a jump forward and negative in a jump backward.
 $ As more complex code can take up multiple lines of output code compared to the source code,
 $ I would not advise using this, as it can result in unexpected behaviour.
