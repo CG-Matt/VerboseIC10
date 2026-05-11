@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 #include "data_structs.hpp"
 
@@ -15,17 +16,8 @@ struct Config
     /** Prints identifier bindings when compilation succeeds. */
     bool log_ref_table;
 
-    /** Directory used by callers that resolve input files from config. */
-    std::string in_folder_path;
-
     /** Directory where generated `.ic10` files are written. */
     std::string out_folder_path;
-
-    /** Maximum number of device targets the compiler should allocate. */
-    std::size_t max_device_count;
-
-    /** Maximum number of register targets the compiler should allocate. */
-    std::size_t max_register_count;
 };
 
 /**
@@ -43,7 +35,7 @@ std::string StripName(const char* path);
  * Writes each string in `data` as a line to `<file_path>/<file_name>.ic10`.
  * Returns false if the output file cannot be opened.
  */
-bool WriteFile(const std::string& file_path, const std::string& file_name, const std::vector<std::string>& data);
+bool WriteFile(std::string_view file_path, std::string_view file_name, const std::vector<std::string>& data);
 
 /**
  * Loads parser settings from a whitespace-delimited key/value config file.
