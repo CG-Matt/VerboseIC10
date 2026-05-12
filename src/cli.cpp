@@ -62,5 +62,5 @@ void CLI::ShowUsage(void)
 
 void CLI::ShowVersion(void)
 {
-    std::printf("victc (Verbose IC Ten Compiler) 0.1.2\n");
+    std::printf("victc (Verbose IC Ten Compiler) 0.1.3\n");
 }

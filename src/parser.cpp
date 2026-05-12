@@ -459,18 +459,31 @@ void Parser::parse(const Buffer<char>& file_contents)
         Parser::current_line = rcmd.line_number;
         if(!Cmd::Exists(rcmd.first))
         {
-            if(!Parser::ident::exists(rcmd.first)){ Parser::setError(rcmd.line_number, vmc::GenericError("Command \"" + rcmd.first + "\" is not a valid command")); continue; }
+            if(Parser::Utilities::IsDevice(rcmd.first))
+            {
+                if(!Cmd::Exists("assign"))  { Parser::setError(rcmd.line_number, vmc::GenericError("'assign' command not found."));  continue; } // Hopefully will prevent crashes if assign is ever removed
             
-            if(Parser::ident::getType(rcmd.first) == Identifier::Type::CONSTANT){ Parser::setError(rcmd.line_number, vmc::GenericError("Identifier \"" + rcmd.first + "\" is const and cannot be modified.")); continue; }
+                rcmd.args.insert(rcmd.args.begin(), rcmd.first);
+                command = Cmd::Get("assign");
+            }
+            else if(Parser::ident::exists(rcmd.first))
+            {
+                if(Parser::ident::getType(rcmd.first) == Identifier::Type::CONSTANT){ Parser::setError(rcmd.line_number, vmc::GenericError("Identifier \"" + rcmd.first + "\" is const and cannot be modified.")); continue; }
             
-            if(!Cmd::Exists("set"))  { Parser::setError(rcmd.line_number, vmc::GenericError("'set' command not found."));  continue; } // Hopefully will prevent crashes if set is ever removed
-            if(!Cmd::Exists("math")) { Parser::setError(rcmd.line_number, vmc::GenericError("'math' command not found.")); continue; } // Hopefully will prevent crashes if math is ever removed
-            
-            if(!rcmd.args.empty() && rcmd.args[0] == "=" && rcmd.args.size() == 2)
-                command = Cmd::Get("set");
+                if(!Cmd::Exists("assign")) { Parser::setError(rcmd.line_number, vmc::GenericError("'assign' command not found."));  continue; } // Hopefully will prevent crashes if assign is ever removed
+                if(!Cmd::Exists("math"))   { Parser::setError(rcmd.line_number, vmc::GenericError("'math' command not found.")); continue; } // Hopefully will prevent crashes if math is ever removed
+                
+                if(!rcmd.args.empty() && rcmd.args[0] == "=" && rcmd.args.size() == 2)
+                    command = Cmd::Get("assign");
+                else
+                    command = Cmd::Get("math");
+                rcmd.args.insert(rcmd.args.begin(), rcmd.first);
+            }
             else
-                command = Cmd::Get("math");
-            rcmd.args.insert(rcmd.args.begin(), rcmd.first);
+            {
+                Parser::setError(rcmd.line_number, vmc::GenericError("Command \"" + rcmd.first + "\" is not a valid command"));
+                continue;
+            }
         }
         else
             command = Cmd::Get(rcmd.first);

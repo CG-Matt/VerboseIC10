@@ -83,27 +83,6 @@ namespace c_commands
             Parser::registerIdentifier(Identifier::Type::REGISTER, free_reg, entry);
         }
     }
-    void set(vmc::ArgumentList args)
-    {
-        std::string reg = args.next();
-        if(!args.expect("=")){ throw vmc::ParserError("Expected '=' in assignment."); }
-        std::string value = args.next();
-
-        if(!Parser::ident::exists(reg))
-        {
-            throw vmc::UnknownIdentifier(reg);
-        }
-
-        if(value.empty())
-        {
-            throw vmc::MissingValueError();
-        }
-
-        reg = Parser::ident::getTarget(reg);
-        value = Parser::Utilities::ParseValue(value);
-
-        Parser::output.push_back(ins::move(reg, value));
-    }
     void label(vmc::ArgumentList args)
     {
         const std::string& name = args.next();
@@ -112,28 +91,6 @@ namespace c_commands
 
         Parser::output.push_back(ins::label(name));
     }
-    void eport(vmc::ArgumentList args)
-    {
-        Device target = Parser::Utilities::ParseDevice(args.next());
-        if(Parser::hasError()){ return; }
-        if(!args.expect("=")){ throw vmc::ParserError("Expected '=' in export command."); }
-        std::string value = args.next();
-        
-        if(value.empty())
-        {
-            throw vmc::MissingValueError();
-        }
-
-        value = Parser::Utilities::ParseValue(value);
-
-        if(target.is_prefabhash)
-        {
-            Parser::output.push_back(ins::sb(target.name, target.variable, value));
-            return;
-        }
-
-        Parser::output.push_back(ins::s(target.name, target.variable, value));
-    }
     void wait(vmc::ArgumentList args)
     {
         if(args.isEmpty())
@@ -141,35 +98,6 @@ namespace c_commands
         else
             // The first argument is the time to sleep
             Parser::output.push_back(ins::sleep(args[0]));
-    }
-    void move(vmc::ArgumentList args)
-    {
-        const std::string& lines = args.next_checked("Number of lines to move not found.");
-
-        if(!args.hasNext()){ Parser::output.push_back(ins::jr(lines)); return; }
-        if(!args.expect("if")){ throw vmc::ParserError("Expected 'if' in move condition."); }
-
-        std::string reg = args.next();
-        const std::string& compare = args.next();
-        const std::string& value = args.next();
-
-        if(!Parser::ident::exists(reg))
-        {
-            throw vmc::UnknownIdentifier(reg);
-        }
-
-        if(!syntax::logic::isValidOperation(compare))
-        {
-            throw vmc::InvalidComparatorError(compare);
-        }
-
-        if(value.empty())
-        {
-            throw vmc::ParserError("Missing constant.");
-        }
-
-        reg = Parser::ident::getTarget(reg);
-        Parser::output.push_back(Utilities::BR_compare(compare, reg, value, lines));
     }
     void math(vmc::ArgumentList args)
     {
@@ -243,22 +171,6 @@ namespace c_commands
         if(!Parser::label::exists(label)){ Parser::label::expect(label); }
 
         Parser::output.push_back(ins::j(label));
-    }
-    void import(vmc::ArgumentList args)
-    {
-        std::string reg = args.next();
-        if(!args.expect("=")){ throw vmc::ParserError("Expected '=' in import command."); }
-        Device target = Parser::Utilities::ParseDevice(args.next());
-        if(Parser::hasError()){ return; }
-
-        if(!Parser::ident::exists(reg))
-        {
-            throw vmc::UnknownIdentifier(reg);
-        }
-
-        reg = Parser::ident::getTarget(reg);
-
-        Parser::output.push_back(ins::l(reg, target.name, target.variable));
     }
     void branch(vmc::ArgumentList args)
     {
@@ -416,39 +328,6 @@ namespace c_commands
             throw vmc::ParserError("Unexpected identifier after 'end' keyword.");
         }
     }
-    void xref(vmc::ArgumentList args)
-    {
-        if(args.size() < 3){ throw vmc::ParserError("Expected xref command: xref <device.variable> <-|-> <register-or-value>"); }
-        
-        Device target = Parser::Utilities::ParseDevice(args.next());
-        if(Parser::hasError()){ return; }
-        
-        const std::string& direction = args.next();
-        if(direction != "<-" && direction != "->"){ throw vmc::ParserError("Invalid direction \"" + direction + "\" provided"); }
-        std::string reg = args.next();
-
-        if(direction == "->")
-        {
-            if(!Parser::ident::exists(reg))
-            {
-                throw vmc::UnknownIdentifier(reg);
-            }
-
-            reg = Parser::ident::getTarget(reg);
-            Parser::output.push_back(ins::l(reg, target.name, target.variable));
-            return;
-        }
-        // else direction == "<-"
-
-        reg = Parser::Utilities::ParseValue(reg);
-        if(target.is_prefabhash)
-        {
-            Parser::output.push_back(ins::sb(target.name, target.variable, reg));
-            return;
-        }
-
-        Parser::output.push_back(ins::s(target.name, target.variable, reg));
-    }
     void p_const(vmc::ArgumentList args)
     {
         // Const will create a reference to a value without using a register
@@ -506,6 +385,61 @@ namespace c_commands
 
         Parser::output.push_back(Utilities::RA_compare(compare, var1, var2, label_name));
     }
+    void assign(vmc::ArgumentList args)
+    {
+        if(args.size() < 3) throw vmc::ParserError("Expected assign command: assign <device|variable> = <device|variable>.");
+        
+        const std::string& destination = args.next_checked("Expected destination device or variable.");
+
+        if(Parser::Utilities::IsDevice(destination))
+        {
+            if(!args.expect("=")) throw vmc::ParserError("Expected '=' between devices / variables.");
+
+            const std::string& source = args.next_checked("Expected source device or variable.");
+
+            if(Parser::Utilities::IsDevice(source))
+            {
+                // trans
+                throw vmc::ParserError("Cannot using 'assign' for transfer between device variables. Use 'trans' instead.");
+            }
+            else
+            {
+                // export
+                Device destination_device = Parser::Utilities::ParseDevice(destination);
+                std::string source_value = Parser::Utilities::ParseValue(source);
+
+                if(destination_device.is_prefabhash)
+                    Parser::output.push_back(ins::sb(destination_device.name, destination_device.variable, source_value));
+                else
+                    Parser::output.push_back(ins::s(destination_device.name, destination_device.variable, source_value));
+            }
+        }
+        else if(Parser::ident::exists(destination))
+        {
+            if(!args.expect("=")) throw vmc::ParserError("Expected '=' between devices / variables.");
+
+            const std::string& source = args.next_checked("Expected source device or variable.");
+            const std::string& destination_register = Parser::ident::getTarget(destination);
+
+            if(Parser::ident::getType(destination) == Identifier::Type::CONSTANT)
+                throw vmc::ParserError("Cannot re-assign value of constant.");
+
+            if(Parser::Utilities::IsDevice(source))
+            {
+                Device source_device = Parser::Utilities::ParseDevice(source);
+                Parser::output.push_back(ins::l(destination_register, source_device.name, source_device.variable));
+            }
+            else
+            {
+                std::string source_value = Parser::Utilities::ParseValue(source);
+                Parser::output.push_back(ins::move(destination_register, source_value));
+            }
+        }
+        else
+        {
+            // TODO: If it's anything else it should be an error.
+        }
+    }
     void loop(vmc::ArgumentList args)
     {
         if(!args.isEmpty())
@@ -524,26 +458,22 @@ namespace c_commands
 
 static const std::unordered_map<std::string_view, Cmd::Function> commands_map =
 {
-    { "dev", c_commands::dev },
-    { "var", c_commands::var },
-    { "set", c_commands::set },
-    { "label", c_commands::label },
-    { "export", c_commands::eport },
-    { "wait", c_commands::wait },
-    { "move", c_commands::move },
-    { "math", c_commands::math },
-    { "jump", c_commands::jump },
-    { "import", c_commands::import },
-    { "branch", c_commands::branch },
-    { "trans", c_commands::trans },
-    { "if", c_commands::p_if },
-    { "else", c_commands::p_else },
-    { "end", c_commands::end },
-    { "xref", c_commands::xref },
-    { "const", c_commands::p_const },
-    { "sub", c_commands::sub },
-    { "call", c_commands::call },
-    { "loop", c_commands::loop }
+    { "dev"   , c_commands::dev     },
+    { "var"   , c_commands::var     },
+    { "label" , c_commands::label   },
+    { "wait"  , c_commands::wait    },
+    { "math"  , c_commands::math    },
+    { "jump"  , c_commands::jump    },
+    { "branch", c_commands::branch  },
+    { "trans" , c_commands::trans   },
+    { "if"    , c_commands::p_if    },
+    { "else"  , c_commands::p_else  },
+    { "end"   , c_commands::end     },
+    { "const" , c_commands::p_const },
+    { "sub"   , c_commands::sub     },
+    { "call"  , c_commands::call    },
+    { "assign", c_commands::assign  },
+    { "loop"  , c_commands::loop    }
 };
 
 bool Cmd::Exists(std::string_view cmd_str) noexcept

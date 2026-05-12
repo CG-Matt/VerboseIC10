@@ -38,6 +38,9 @@ struct ProgramLine
     std::string first;
     std::vector<std::string> args;
 
+    /**
+     * Tokenises one source line into its leading command and remaining arguments.
+     */
     ProgramLine(std::size_t line_number, std::string_view line);
 };
 

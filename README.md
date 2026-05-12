@@ -95,38 +95,48 @@ Math functions use `<-` to pass their input value:
 setting = sqrt <- 125
 ```
 
-The older explicit `set` and `math` commands are still supported.
+The explicit `assign` command is also available when you want to write the destination
+name out first:
+
+```vic10
+assign counter = 0
+```
 
 ## Device Access
 
-`xref` loads values from device variables or writes values back to them.
+Device variables can be assigned with the same `=` syntax.
 
 Load a device variable into a register:
 
 ```vic10
-xref computer.On -> setting
+setting = computer.On
 ```
 
 Write a register or value to a device variable:
 
 ```vic10
-xref vending_machine.Setting <- setting
-xref computer.Setting <- 10
+vending_machine.Setting = setting
+computer.Setting = 10
 ```
 
 Use `@device_name` as shorthand for `device_name.PrefabHash`:
 
 ```vic10
-xref @computer -> prefab_hash
+prefab_hash = @computer
 ```
 
 Use `*` when writing to every connected device with a matching prefab hash:
 
 ```vic10
-xref *prefab_hash.Setting <- 10
+*prefab_hash.Setting = 10
 ```
 
-The older `import` and `export` commands are still supported, but `xref` is preferred.
+The explicit `assign` command works for device access too:
+
+```vic10
+assign setting = computer.On
+assign vending_machine.Setting = setting
+```
 
 ## Control Flow
 
@@ -172,7 +182,7 @@ Conditionals use `if`, optional `else`, and `end if`:
 
 ```vic10
 if setting != 0 and counter > 20
-    xref computer.Setting <- setting
+    computer.Setting = setting
 else
     counter += 10
 end if

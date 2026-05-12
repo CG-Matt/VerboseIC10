@@ -33,13 +33,23 @@ $ Labels allow you to jump execution points by going to them using the jump or b
 label reset
 
 
-$ DEPRECATED
-$ The set command lets you change the value of a register
-set counter = 0
-
-
-$ You can just use the name of the variable without set to change the value of a register
+$ Assignment works for registers and device variables.
+$ The compiler resolves whether each side is a variable, constant, or device access.
+$ These examples cover the supported forms in one place:
+$ - register <- literal
+$ - register <- device variable
+$ - register <- prefab hash alias
+$ - device variable <- register
+$ - device variable <- literal
+$ - prefab hash write <- literal
+$ - explicit assign command
 counter = 1
+var1 = computer.On
+var1 = @computer
+vending_machine.Setting = var1
+Self.Setting = 10
+*var1.Setting = 10
+assign counter = 10
 
 
 
@@ -53,47 +63,8 @@ label main
 
 
 
-$ xref lets you load a value from an external device variable into a register
-$ or write the value from a register or a const to a device variable.
-$ It replaces the now deprecated "export" and "import" commands
-
-$ Loading the var1 register with the value of computer.On
-xref computer.On -> var1
-
-$ To make code cleaner instead of using computer.PrefabHash we can also use @computer
-$ This command will load the computers prefabhash into the var1 register
-xref @computer -> var1
-
-$ We can also export to all connected devices with the same PrefabHash by using the PrefabHash as an export destination prefixed with a "*"
-$ The following code will export 10 to the Setting variable of all connected computers
-$ "*var1" tells the compiler to use var1 as a PrefabHash. It is up to the user to previously load the desired PrefabHash into the register.
-$ In this code it is done by the above command
-xref *var1.Setting <- 10
-
-$ Loading the vending_machine.Setting variable with the value of var1
-xref vending_machine.Setting <- var1
-
-$ Loading the Self.Setting variable with a const value
-$ NOTE: Self is a device definition referring to the unit executing the commands
-xref Self.Setting <- 10
-
-
-
-$ DEPRECATED
-$ import lets you load a value from an external device variable into a register
-import var1 = computer.PrefabHash
-
-
-
-$ DEPRECATED
-$ export lets you write the value from a register or a const to a device variable.
-export vending_machine.Setting = counter
-
-
-
 $ trans lets you transfer a variable's data from one device to another without the need to xref in and out.
 $ This command requires the carry module to be active.
-$ NOTE: Internally trans is still an xref in and xref out command. Its purpose is simply to make code cleaner.
 trans vending_machine.Setting => computer.Setting
 
 
@@ -149,19 +120,6 @@ call example_subroutine
 
 $ The call command can also accept a conditional statement to call a subroutine only if a condition is met.
 call example_subroutine if counter < 10
-
-
-
-$ POTENTIALLY BUGGY PLEASE AVOID USING
-$ move lets us jump forward or backward a specified number of lines with or without a condition.
-$ Positive line numbers result in a jump forward and negative in a jump backward.
-$ As more complex code can take up multiple lines of output code compared to the source code,
-$ I would not advise using this, as it can result in unexpected behaviour.
-$ Unconditionally jump 0 lines.
-move 0
-
-$ Jump back 2 lines if counter < 20
-move -2 if counter < 20
 
 
 
