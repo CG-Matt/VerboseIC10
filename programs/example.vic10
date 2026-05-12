@@ -3,7 +3,7 @@ $ This is a comment. Any line beginning with a "$" will be treated like a commen
 
 $ This is a directive.
 $ The version directive lets the compiler know version of VIC10 we are using.
-#version 4
+#version 5
 
 
 
@@ -15,21 +15,17 @@ $ most commonly used by the "trans" command.
 
 
 
-$ The reg command lets us define registers for later use.
-$ We can assign one at a time -> reg example_register
-$ Or provide an array -> reg [example_reg1, example_reg2, ...]
-$ The amount of registers is limited to the amount specified in the "parser.config" file.
-reg [ counter, var1 ]
+$ The var command lets us define registers for later use.
+$ Variables are declared using array syntax.
+var [ counter, var1 ]
 
 
 
 $ The dev command lets us define external devices that we will be calling.
-$ We can assign one at a time -> dev d0 example_device
-$ Or provide an array -> dev * = [ example_device1, example_device2, ... ]
-$ The amount of devices is limited to the amount specified in the "parser.config" file.
+$ Devices are declared using array syntax and are assigned automatically.
 $ Defining devices using the array method also sets the parsers "devices_initialised" flag
 $ which will cause the program to error if you try to define any more devices.
-dev * = [ computer, vending_machine ]
+dev [ computer, vending_machine ]
 
 
 

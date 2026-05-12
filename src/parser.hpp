@@ -35,6 +35,12 @@ struct ParserFlags
 namespace Parser::Utilities
 {
     /**
+     * Returns `true` if `device` could be parsed as a device.
+     * `false` otherwise.
+     */
+    bool IsDevice(std::string_view device) noexcept;
+
+    /**
      * Parses a device expression such as `device.Variable`, `*hash.Variable`, or `@device`.
      * Sets a parser error or throws `vmc::ParserError` if the expression cannot be resolved.
      */
@@ -119,11 +125,6 @@ namespace Parser
          * Throws `vmc::ParserError` if `name` is unknown.
          */
         const std::string& getTarget(std::string_view name);
-
-        /**
-         * Reserves and returns the next available IC10 register target.
-         */
-        std::string getNextFreeRegister(void);
 
         /**
          * Returns a read-only reference to the internal identifier output bindings map.

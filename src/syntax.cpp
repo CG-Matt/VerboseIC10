@@ -4,7 +4,7 @@
 
 namespace syntax
 {
-    static const std::size_t _version = 4;
+    static const std::size_t _version = 5;
 
     namespace devices
     {

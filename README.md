@@ -32,26 +32,12 @@ To remove build output:
 make clean
 ```
 
-## Configuration
-
-The compiler reads `parser.config` from the working directory. The default file controls
-logging, input/output folders, and the available IC10 target limits:
-
-```txt
-LOG_OUTPUT FALSE
-LOG_REF_TABLE FALSE
-IN_FOLDER_PATH ./programs
-OUT_FOLDER_PATH ./programs
-MAX_DEVICE_COUNT 6
-MAX_REGISTER_COUNT 16
-```
-
 ## Writing `.vic10` Files
 
 Each `.vic10` file should declare the syntax version it expects:
 
 ```vic10
-#version 4
+#version 5
 ```
 
 The optional carry module reserves the carry register for commands that need temporary
@@ -65,30 +51,17 @@ Lines beginning with `$` are comments.
 
 ## Registers And Devices
 
-Registers can be declared one at a time:
+Registers are declared with `var` using bracketed syntax:
 
 ```vic10
-reg counter
-reg setting
+var [counter, setting, prefab_hash]
 ```
 
-or as a list:
+Devices are declared with `dev` using bracketed syntax and are assigned automatically
+from the available IC10 device targets:
 
 ```vic10
-reg [counter, setting, prefab_hash]
-```
-
-Devices can also be declared individually:
-
-```vic10
-dev d0 computer
-dev d1 vending_machine
-```
-
-or assigned automatically from the available device targets:
-
-```vic10
-dev * = [computer, vending_machine]
+dev [computer, vending_machine]
 ```
 
 ## Constants

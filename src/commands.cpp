@@ -36,59 +36,52 @@ namespace c_commands
         if(Parser::flags.devices_initialised == true)
             throw vmc::ParserError("Reinitialisation of devices not allowed.");
 
-        // Ensure that we have devices available
-        if(!Parser::device::available())
-            throw vmc::ParserError("Max device limit reached.");
-        
-        const std::string& target = args.next_checked("Missing target device.");
+        if(args.isEmpty())
+            throw vmc::ParserError("Expected device declaration: dev [device1, device2, ...]");
 
-        if(syntax::devices::isValid(target))
-        {
-            const std::string& name = args.next_checked("Missing device name.");
-            if(Parser::ident::exists(name)) throw vmc::ParserError("Device with name \"" + name + "\" already exists.");
-            Parser::registerIdentifier(Identifier::Type::DEVICE, target, name);
-            Parser::device::take(target);
-            return;
-        }
-        else if(target == "*")
-        {
-            if(!args.expect("="))
-                throw vmc::ParserError("Expected '=' after device wildcard.");
-
-            Parser::flags.devices_initialised = true;
-            std::vector<std::string> arr = Parser::Utilities::ParseArray(args);
-            if(Parser::hasError()){ return; }
-            if(arr.size() > 6) throw vmc::ParserError("Too many devices listed. (" + std::to_string(arr.size()) + "/6)");
-            for(std::size_t i = 0; i < arr.size(); i++)
-            {
-                if(Parser::ident::exists(arr[i])){ throw vmc::DuplicateReferenceError(arr[i]); }
-                Parser::registerIdentifier(Identifier::Type::DEVICE, Parser::device::next(), arr[i]);
-            }
-            return;
-        }
-
-        throw vmc::ParserError(std::string("Unknown device target '") + target + "'.");
-    }
-    void reg(vmc::ArgumentList args)
-    {
-        if(args.isEmpty()){ throw vmc::ParserError("Expected register declaration: reg <name> or reg [name1, name2, ...]"); }
         const std::string& first = args.peek();
-        if(!first.empty() && first.front() == '[')
-        {
-            std::vector<std::string> arr = Parser::Utilities::ParseArray(args);
-            if(Parser::hasError()){ return; }
-            for(auto &entry : arr)
-            {
-                std::string free_reg = Parser::ident::getNextFreeRegister();
-                if(Parser::ident::exists(entry)){ throw vmc::DuplicateReferenceError(entry); }
-                Parser::registerIdentifier(Identifier::Type::REGISTER, free_reg, entry);
-            }
-            return;
-        }
 
-        if(Parser::ident::exists(first)){ throw vmc::DuplicateReferenceError(first); }
-        std::string reg = Parser::ident::getNextFreeRegister();
-        Parser::registerIdentifier(Identifier::Type::REGISTER, reg, first);
+        if(first.empty() || first.front() != '[')
+            throw vmc::ParserError("Expected device declaration: dev [device1, device2, ...]");
+
+        std::vector<std::string> arr = Parser::Utilities::ParseArray(args);
+        
+        if(arr.size() == 0)
+            return;
+        if(arr.size() >  syntax::devices::count())
+            throw vmc::ParserError("Too many devices listed. (" + std::to_string(arr.size()) + "/" + std::to_string(syntax::devices::count()) + ")");
+        
+        Parser::flags.devices_initialised = true;
+        
+        for(const std::string& device : arr)
+        {
+            if(Parser::ident::exists(device))
+                throw vmc::DuplicateReferenceError(device);
+
+            Parser::registerIdentifier(Identifier::Type::DEVICE, Parser::device::next(), device);
+        }
+    }
+    void var(vmc::ArgumentList args)
+    {
+        if(args.isEmpty())
+            throw vmc::ParserError("Expected variable declaration: var [name1, name2, ...]");
+        
+        const std::string& first = args.peek();
+
+        if(first.empty() || first.front() != '[')
+            throw vmc::ParserError("Expected variable declaration: var [name1, name2, ...]");
+
+        std::vector<std::string> arr = Parser::Utilities::ParseArray(args);
+        
+        for(auto &entry : arr)
+        {
+            std::string_view free_reg = Parser::reg::next();
+            
+            if(Parser::ident::exists(entry))
+                throw vmc::DuplicateReferenceError(entry);
+            
+            Parser::registerIdentifier(Identifier::Type::REGISTER, free_reg, entry);
+        }
     }
     void set(vmc::ArgumentList args)
     {
@@ -532,7 +525,7 @@ namespace c_commands
 static const std::unordered_map<std::string_view, Cmd::Function> commands_map =
 {
     { "dev", c_commands::dev },
-    { "reg", c_commands::reg },
+    { "var", c_commands::var },
     { "set", c_commands::set },
     { "label", c_commands::label },
     { "export", c_commands::eport },

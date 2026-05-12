@@ -9,23 +9,45 @@
 #include "utils.hpp"
 #include "syntax.hpp"
 
+bool Parser::Utilities::IsDevice(std::string_view device) noexcept
+{
+    if(device.empty()) return false;
+
+    if(device.front() == '@')                   // Alias for PrefabHash
+    {
+        if(device.find('.') != device.npos)
+            return false;
+        
+        return true;
+    }
+
+    if(device.front() == '*')                   // Use prefabhash
+        device.remove_prefix(1);
+
+    if(device.find('.') == device.npos)         // No '.' character.
+        return false;
+
+    if(device.find('.') == 0)                   // No characters before '.'
+        return false;
+
+    if(device.find('.') != device.rfind('.'))   // Has more than one dot character
+        return false;
+
+    return true;
+}
+
 Device Parser::Utilities::ParseDevice(std::string_view device_in)
 {
     Device device_out;
 
     if(device_in.empty())
-    {
-        Parser::setError(vmc::GenericError("Cannot parse empty device string"));
-        return device_out;
-    }
+        throw vmc::ParserError("Cannot parse empty device string");
 
     if(device_in.front() == '@') // Alias for PrefabHash
     {
         if(device_in.find('.') != device_in.npos)
-        {
-            Parser::setError(vmc::GenericError("A device cannot have a prefix and a variable name defined. (Excluding * for PrefabHash use)"));
-            return device_out;
-        }
+            throw vmc::ParserError("A device cannot have a prefix and a variable name defined. (Excluding * for PrefabHash use)");
+
         device_in.remove_prefix(1);
 
         if(!Parser::ident::exists(device_in) || Parser::ident::getType(device_in) != Identifier::Type::DEVICE)
@@ -44,16 +66,10 @@ Device Parser::Utilities::ParseDevice(std::string_view device_in)
     std::vector<std::string> data = SplitString(device_in, '.');
     
     if(data.size() != 2)
-    {
-        Parser::setError(vmc::GenericError("Invalid device \"" + std::string(device_in) + "\""));
-        return device_out;
-    }
+        throw vmc::ParserError("Invalid device \"" + std::string(device_in) + "\"");
 
     if(!Parser::ident::exists(data[0]))
-    {
-        Parser::setError(vmc::GenericError("Invalid device \"" + std::string(device_in) + "\""));
-        return device_out;
-    }
+        throw vmc::ParserError("Invalid device \"" + std::string(device_in) + "\"");
 
     device_out.name = Parser::ident::getTarget(data[0]);
     if(device_out.name.empty()) throw vmc::UnknownIdentifier(data[0]);
@@ -68,24 +84,15 @@ std::vector<std::string> Parser::Utilities::ParseArray(vmc::ArgumentList argumen
     while(arguments.hasNext()) line += arguments.next();
     
     if(line.empty())
-    {
-        Parser::setError(vmc::GenericError("No array data to parse."));
-        return std::vector<std::string>();
-    }
+        throw vmc::ParserError("No array data to parse.");
 
-    if(line.front() != '[') // Return error if first char does not open array
-    {
-        Parser::setError(vmc::GenericError("First character does not open array."));
-        return std::vector<std::string>();
-    }
+    if(line.front() != '[') // Throw error if first char does not open array
+        throw vmc::ParserError("First character does not open array.");
 
     // Technically this has different functionality to the original,
     // but this needs to be reworked anyways because it does not function properly.
     if(line.back() != ']') // Return error if array does not end with a ']' character.
-    {
-        Parser::setError(vmc::GenericError("No array terminator found at end. \"]\" expected."));
-        return std::vector<std::string>();
-    }
+        throw vmc::ParserError("No array terminator found at end. \"]\" expected.");
 
     // Should also perform checks to see if we have more than 1 opening and closing brackets
 
@@ -102,6 +109,8 @@ std::vector<std::string> Parser::Utilities::ParseArray(vmc::ArgumentList argumen
 
 std::string Parser::Utilities::ParseValue(const std::string& value)
 {
+    if(value.empty()) throw vmc::MissingValueError();
+
     if(syntax::isBoolean(value)){ return ParseBoolean(value); }
     if(syntax::isNumber(value)){ return value; }
     
@@ -267,16 +276,6 @@ const std::string& Parser::ident::getTarget(std::string_view name)
     return _output_bindings.at(std::string(name)).target;
 }
 
-std::string Parser::ident::getNextFreeRegister(void)
-{
-    if(!Parser::reg::available())
-    {
-        Parser::setError(vmc::GenericError("Max register limit has been reached"));
-        return _empty_str;
-    }
-    return std::string(Parser::reg::next());
-}
-
 const std::unordered_map<std::string, Identifier>& Parser::ident::getAll(void)
 {
     return _output_bindings;
@@ -404,7 +403,7 @@ namespace Parser::reg
         do
         {
             if(next_register_index >= syntax::registers::count())
-                throw std::runtime_error("Parser::reg::next(): No more register targets available.");
+                throw vmc::ParserError("Parser::reg::next(): No more register targets available.");
 
             next_register = syntax::registers::getAll()[next_register_index++];
         }
