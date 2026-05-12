@@ -36,6 +36,21 @@ bool Parser::Utilities::IsDevice(std::string_view device) noexcept
     return true;
 }
 
+bool Parser::Utilities::IsSubroutineCall(std::string_view text) noexcept
+{
+    if(text.empty()) return false;
+
+    if(text.size() < 2) return false;       // Subroutine call must at least have some label name "x" followed by "()".
+
+    if(text.back() != ')') return false;    // Must end with ')'.
+
+    text.remove_suffix(1);
+
+    if(text.back() != '(') return false;    // Second last character must be '('.
+
+    return true;                            // Dont check label as it could be not registered yet.
+}
+
 Device Parser::Utilities::ParseDevice(std::string_view device_in)
 {
     Device device_out;
@@ -435,6 +450,7 @@ void Parser::init()
 void Parser::parse(const Buffer<char>& file_contents)
 {
     // Parse file
+    // std::vector<ParserToken> = Parser::_Tokenize(file_contents);
     Parser::_ParseFile(file_contents);
     // Parse directives
     Parser::_ParseDirectives();
@@ -459,7 +475,14 @@ void Parser::parse(const Buffer<char>& file_contents)
         Parser::current_line = rcmd.line_number;
         if(!Cmd::Exists(rcmd.first))
         {
-            if(Parser::Utilities::IsDevice(rcmd.first))
+            if(Parser::Utilities::IsSubroutineCall(rcmd.first))
+            {
+                if(!Cmd::Exists("call"))    { Parser::setError(rcmd.line_number, vmc::GenericError("'call' command not found."));  continue; } // Hopefully will prevent crashes if call is ever removed
+                rcmd.args.insert(rcmd.args.begin(), rcmd.first);
+                rcmd.args[0].erase(rcmd.args[0].size() - 2, 2);
+                command = Cmd::Get("call");
+            }
+            else if(Parser::Utilities::IsDevice(rcmd.first))
             {
                 if(!Cmd::Exists("assign"))  { Parser::setError(rcmd.line_number, vmc::GenericError("'assign' command not found."));  continue; } // Hopefully will prevent crashes if assign is ever removed
             

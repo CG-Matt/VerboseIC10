@@ -106,7 +106,7 @@ wait 4
 
 
 
-$ The sub command allows us to define subroutines which can be called anywhere in the program using the call command.
+$ The sub command allows us to define subroutines which can be called anywhere in the program.
 $ Subroutines need a name and need to be closed using the end command.
 sub example_subroutine
     math counter += 10
@@ -114,8 +114,11 @@ end sub
 
 
 
-$ The call command lets us call a subroutine from anywhere in our program.
-$ After the subroutine is executed the program will continue execution after the call command.
+$ Subroutines can be called directly using the subroutine name followed by "()".
+$ After the subroutine is executed the program will continue execution after the call site.
+example_subroutine()
+
+$ The explicit call command is still supported.
 call example_subroutine
 
 $ The call command can also accept a conditional statement to call a subroutine only if a condition is met.

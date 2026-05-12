@@ -368,17 +368,9 @@ namespace c_commands
         const std::string& compare = args.next();
         std::string var2 = args.next();
 
-        if(!syntax::logic::isValidOperation(compare)) { throw vmc::InvalidComparatorError(compare); }
-
-        if(var1.empty())
-        {
-            throw vmc::MissingValueError();
-        }
-
-        if(var2.empty())
-        {
-            throw vmc::MissingValueError();
-        }
+        if(var1.empty()) throw vmc::MissingValueError();
+        if(!syntax::logic::isValidOperation(compare)) throw vmc::InvalidComparatorError(compare);
+        if(var2.empty()) throw vmc::MissingValueError();
 
         var1 = Parser::Utilities::ParseValue(var1);
         var2 = Parser::Utilities::ParseValue(var2);

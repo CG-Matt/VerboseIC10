@@ -41,6 +41,12 @@ namespace Parser::Utilities
     bool IsDevice(std::string_view device) noexcept;
 
     /**
+     * Returns `true` if `text` is a valid subroutine call.
+     * `false` otherwise.
+     */
+    bool IsSubroutineCall(std::string_view text) noexcept;
+
+    /**
      * Parses a device expression such as `device.Variable`, `*hash.Variable`, or `@device`.
      * Sets a parser error or throws `vmc::ParserError` if the expression cannot be resolved.
      */

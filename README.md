@@ -174,9 +174,12 @@ sub increment
     counter += 1
 end sub
 
+increment()
 call increment
 call increment if counter < 20
 ```
+
+The `name()` form is shorthand for calling a subroutine by name.
 
 Conditionals use `if`, optional `else`, and `end if`:
 
