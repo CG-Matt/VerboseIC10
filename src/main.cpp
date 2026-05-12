@@ -3,22 +3,21 @@
 #include "file_manager.hpp"
 #include "parser.hpp"
 #include "utils.hpp"
+#include "cli.hpp"
 
 int main(int argc, char **argv)
 {
-    if(argc < 2)
-    {
-        std::puts("Please provide the name of a file to parse");
-        return 1;
-    }
+    CLI::Args::Data args;
 
-    const char* file_name = argv[1];
+    if(!CLI::Args::Parse(args, argc, argv)) { CLI::ShowUsage(); return 1; }
 
-    // Read config file
-    Config config = ReadConfigurationFile("./parser.config");
+    if(args.show_help){ CLI::ShowUsage(); return 0; }
+    if(args.show_version){ CLI::ShowVersion(); return 0; }
+
+    if(!args.input){ CLI::ShowUsage(); return 1; }
 
     // Read file
-    Buffer<char> file_contents = ReadFile(file_name);
+    Buffer<char> file_contents = ReadFile(args.input);
 
     // Parse file
     Parser::init();
@@ -37,28 +36,16 @@ int main(int argc, char **argv)
     }
 
     // Export file
-    if(!WriteFile(config.out_folder_path, StripName(file_name), Parser::output)){ std::puts("Error writing to file"); }
+    if(!WriteFile(args.output ? args.output : ToOutputPath(args.input), Parser::output))
+        std::puts("Error writing to file");
 
     // Log data if required
-    if(config.log_ref_table)
+    if(args.show_bindings)
     {
         std::puts("REF_TABLE:");
         for(auto& def : Parser::ident::getAll())
         {
             std::printf("  - Int: %s Ext: %s\n", def.second.target.c_str(), def.first.c_str());
-        }
-    }
-
-    if(config.log_output)
-    {
-        // Some of the compiler errors might have newlines.
-        // This ensures that every error gets printed correctly.
-        std::puts("OUTPUT:");
-        std::string output_str = JoinString(Parser::output, "\n");
-        Parser::output = SplitString(output_str, '\n');
-        for(auto &line : Parser::output)
-        {
-            std::printf("  - %s\n", line.c_str());
         }
     }
     
