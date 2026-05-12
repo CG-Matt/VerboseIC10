@@ -4,6 +4,7 @@
 #include "syntax.hpp"
 #include "instructions.hpp"
 #include "parser.hpp"
+#include "comp_structs.hpp"
 
 namespace Utilities
 {
@@ -409,6 +410,14 @@ namespace c_commands
             Parser::flags.in_subroutine = false;
             Parser::output.push_back(ins::j("ra"));
         }
+        else if(end_type == "loop")
+        {
+            if(!Parser::flags.in_loop)
+                throw vmc::ParserError("Loop not initialised correctly");
+
+            Parser::flags.in_loop = false;
+            Parser::output.push_back(ins::j(Parser::label::getCurrentLoopLabel()));
+        }
         else
         {
             throw vmc::ParserError("Unexpected identifier after 'end' keyword.");
@@ -504,6 +513,20 @@ namespace c_commands
 
         Parser::output.push_back(Utilities::RA_compare(compare, var1, var2, label_name));
     }
+    void loop(vmc::ArgumentList args)
+    {
+        if(!args.isEmpty())
+            throw vmc::ParserError("Unexpected arguments after 'loop' keyword.");
+
+        if(Parser::flags.in_loop)
+            throw vmc::ParserError("Nested loops currently unsupported.");
+
+        const std::string& label = Parser::label::generateLoopLabel();
+
+        Parser::flags.in_loop = true;
+
+        Parser::output.push_back(ins::label(label));
+    }
 };
 
 static const std::unordered_map<std::string_view, Cmd::Function> commands_map =
@@ -526,7 +549,8 @@ static const std::unordered_map<std::string_view, Cmd::Function> commands_map =
     { "xref", c_commands::xref },
     { "const", c_commands::p_const },
     { "sub", c_commands::sub },
-    { "call", c_commands::call }
+    { "call", c_commands::call },
+    { "loop", c_commands::loop }
 };
 
 bool Cmd::Exists(std::string_view cmd_str) noexcept

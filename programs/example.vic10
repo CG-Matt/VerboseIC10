@@ -169,6 +169,19 @@ move -2 if counter < 20
 
 
 
+$ The loop command creates a compiler-managed loop label and the matching
+$ "end loop" jumps back to the start of that block.
+$ Nested loops are currently unsupported.
+loop
+    counter += 1
+
+    if counter >= 3
+        jump => end_loop
+    end if
+end loop
+
+
+
 label end_loop
 
 

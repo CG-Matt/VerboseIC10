@@ -170,6 +170,20 @@ Branches jump only when their condition is true:
 branch => loop_start if counter < 20
 ```
 
+`loop` emits a compiler-managed loop label, and `end loop` jumps back to it:
+
+```vic10
+loop
+    counter += 1
+
+    if counter >= 3
+        jump => done
+    end if
+end loop
+
+label done
+```
+
 Subroutines are declared with `sub` and closed with `end sub`:
 
 ```vic10

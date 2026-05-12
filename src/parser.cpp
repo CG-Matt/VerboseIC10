@@ -128,7 +128,9 @@ namespace Parser::label
     static std::unordered_set<std::string> _registered_labels;
     static std::vector<vmc::IndexedStr> _unresolved_labels;
     static std::size_t _conditional_label_index = 0;
+    static std::size_t _loop_label_index = 0;
     static ConditionalInfo _conditional;
+    static std::string _loop_label;
 };
 
 namespace Parser
@@ -323,6 +325,20 @@ ConditionalInfo Parser::label::generateConditionals(void)
 const ConditionalInfo& Parser::label::getCurrentConditionals(void)
 {
     return _conditional;
+}
+
+const std::string& Parser::label::generateLoopLabel(void)
+{
+    _loop_label = "ll" + std::to_string(_loop_label_index++);
+
+    Parser::registerLabel(_loop_label);
+
+    return _loop_label;
+}
+
+const std::string& Parser::label::getCurrentLoopLabel(void)
+{
+    return _loop_label;
 }
 
 namespace Parser::device

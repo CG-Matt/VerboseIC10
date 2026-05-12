@@ -27,6 +27,9 @@ struct ParserFlags
 
     /** True while parsing lines inside a subroutine block. */
     bool in_subroutine = false;
+
+    /** True while parsing lines inside a loop block. */
+    bool in_loop = false;
 };
 
 namespace Parser::Utilities
@@ -155,6 +158,16 @@ namespace Parser
          * Returns the labels most recently generated for the active conditional block.
          */
         const ConditionalInfo& getCurrentConditionals(void);
+
+        /**
+         * Generates and registers a unique label for a loop block.
+         */
+        const std::string& generateLoopLabel(void);
+
+        /**
+         * Returns the label most recently generate for the active loop block.
+         */
+        const std::string& getCurrentLoopLabel(void);
     }
 
     /**
