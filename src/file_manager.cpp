@@ -7,11 +7,14 @@
 
 Buffer<char> ReadFile(const char* path)
 {
-    if(!std::filesystem::exists(path))
-        throw std::runtime_error(std::string("No such file or directory: ") + path);
+    std::error_code ec;
+    std::uintmax_t size = std::filesystem::file_size(path, ec);
+
+    // If the file does not exist during the file size check `ec` will get set.
+    if(ec) throw std::runtime_error(std::string("Error opening file: ") + path);
 
     // Initialise buffer with file size as its size
-    Buffer<char> buffer(std::filesystem::file_size(path));
+    Buffer<char> buffer(size);
 
     std::ifstream file(path, std::ios::binary);
     if(!file)
