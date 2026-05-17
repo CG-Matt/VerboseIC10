@@ -39,3 +39,11 @@ ProgramLine::ProgramLine(std::size_t line_number, std::string_view line)
     // If the first token starts with a '#' remove it.
     if(!this->first.empty() && this->first.front() == '#') this->first.erase(0, 1);
 }
+
+Device::Device(std::string_view target, std::string_view variable, bool is_prefabhash)
+    : target(target), variable(variable), is_prefabhash(is_prefabhash)
+{}
+
+Device::Device(std::string_view target, std::string_view variable)
+    : Device(target, variable, false)
+{}

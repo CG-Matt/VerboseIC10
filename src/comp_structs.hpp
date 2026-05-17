@@ -47,9 +47,31 @@ struct ProgramLine
 /**
  * A resolved device reference used by load/store instructions.
  */
-struct Device
+class Device
 {
-    std::string name;
-    std::string variable;
-    bool is_prefabhash = false;
+    public:
+        /**
+         * The resolved IC10 target name, usually a device binding or prefab hash reference.
+         */
+        std::string target;
+
+        /**
+         * The device variable or property name, such as `Setting` or `PrefabHash`.
+         */
+        std::string variable;
+
+        /**
+         * True when the source expression used `*` to indicate a prefab-hash style access.
+         */
+        bool is_prefabhash = false;
+
+    /**
+     * Builds a fully specified device reference.
+     */
+    Device(std::string_view target, std::string_view variable, bool is_prefabhash);
+
+    /**
+     * Builds a standard device reference without prefab-hash mode.
+     */
+    Device(std::string_view target, std::string_view variable);
 };

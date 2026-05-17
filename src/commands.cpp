@@ -223,14 +223,14 @@ namespace c_commands
 
         if(destination.is_prefabhash)
         {
-            eport = ins::sb(destination.name, destination.variable, Parser::ident::getTarget("carry"));
+            eport = ins::sb(destination.target, destination.variable, Parser::ident::getTarget("carry"));
         }
         else
         {
-            eport = ins::s(destination.name, destination.variable, Parser::ident::getTarget("carry"));
+            eport = ins::s(destination.target, destination.variable, Parser::ident::getTarget("carry"));
         }
 
-        std::string eport2 = ins::l(Parser::ident::getTarget("carry"), source.name, source.variable);
+        std::string eport2 = ins::l(Parser::ident::getTarget("carry"), source.target, source.variable);
 
         Parser::output.push_back(eport2 + "\n" + eport);
     }
@@ -401,9 +401,9 @@ namespace c_commands
                 std::string source_value = Parser::Utilities::ParseValue(source);
 
                 if(destination_device.is_prefabhash)
-                    Parser::output.push_back(ins::sb(destination_device.name, destination_device.variable, source_value));
+                    Parser::output.push_back(ins::sb(destination_device.target, destination_device.variable, source_value));
                 else
-                    Parser::output.push_back(ins::s(destination_device.name, destination_device.variable, source_value));
+                    Parser::output.push_back(ins::s(destination_device.target, destination_device.variable, source_value));
             }
         }
         else if(Parser::ident::exists(destination))
@@ -419,7 +419,7 @@ namespace c_commands
             if(Parser::Utilities::IsDevice(source))
             {
                 Device source_device = Parser::Utilities::ParseDevice(source);
-                Parser::output.push_back(ins::l(destination_register, source_device.name, source_device.variable));
+                Parser::output.push_back(ins::l(destination_register, source_device.target, source_device.variable));
             }
             else
             {

@@ -51,46 +51,54 @@ bool Parser::Utilities::IsSubroutineCall(std::string_view text) noexcept
     return true;                            // Dont check label as it could be not registered yet.
 }
 
-Device Parser::Utilities::ParseDevice(std::string_view device_in)
+Device Parser::Utilities::ParseDevice(std::string_view device_str)
 {
-    Device device_out;
+    bool is_prefabhash = false;
+    std::string_view device_in_full = device_str;
 
-    if(device_in.empty())
+    if(device_str.empty())
         throw vmc::ParserError("Cannot parse empty device string");
 
-    if(device_in.front() == '@') // Alias for PrefabHash
+    if(device_str.front() == '@') // Alias for PrefabHash
     {
-        if(device_in.find('.') != device_in.npos)
+        if(device_str.find('.') != device_str.npos)
             throw vmc::ParserError("A device cannot have a prefix and a variable name defined. (Excluding * for PrefabHash use)");
 
-        device_in.remove_prefix(1);
+        device_str.remove_prefix(1);
 
-        if(!Parser::ident::exists(device_in) || Parser::ident::getType(device_in) != Identifier::Type::DEVICE)
-            throw vmc::UnknownIdentifier(std::string(device_in));
+        if(!Parser::ident::exists(device_str) || Parser::ident::getType(device_str) != Identifier::Type::DEVICE)
+            throw vmc::UnknownIdentifier(std::string(device_str));
 
-        device_out.name = Parser::ident::getTarget(device_in);
-        device_out.variable = "PrefabHash";
-        return device_out;
+        return Device(Parser::ident::getTarget(device_str), "PrefabHash");
     }
-    if(device_in.front() == '*') // Use prefabhash
+    if(device_str.front() == '*') // Use prefabhash
     {
-        device_in.remove_prefix(1);
-        device_out.is_prefabhash = true;
+        device_str.remove_prefix(1);
+        is_prefabhash = true;
     }
 
-    std::vector<std::string> data = SplitString(device_in, '.');
-    
-    if(data.size() != 2)
-        throw vmc::ParserError("Invalid device \"" + std::string(device_in) + "\"");
+    std::size_t pos = device_str.find('.');
 
-    if(!Parser::ident::exists(data[0]))
-        throw vmc::ParserError("Invalid device \"" + std::string(device_in) + "\"");
+    // The device string does not contain a '.' separator
+    if(pos == device_str.npos)
+        throw vmc::ParserError("Invalid device \"" + std::string(device_in_full) + "\"");
 
-    device_out.name = Parser::ident::getTarget(data[0]);
-    if(device_out.name.empty()) throw vmc::UnknownIdentifier(data[0]);
-    device_out.variable = data[1];
-    return device_out;
+    std::string_view device_identifier { device_str.data(), pos };
+
+    // Remove separator
+    // device_str is now the variable name
+    device_str.remove_prefix(pos + 1);
+
+    // The device string contains more than 1 separator
+    if(device_str.find('.') != device_str.npos)
+        throw vmc::ParserError("Invalid device \"" + std::string(device_in_full) + "\"");
+
+    if(!Parser::ident::exists(device_identifier))
+        throw vmc::UnknownIdentifier(std::string(device_identifier));
+
+    return Device(Parser::ident::getTarget(device_identifier), device_str, is_prefabhash);
 }
+
 std::vector<std::string> Parser::Utilities::ParseArray(vmc::ArgumentList arguments)
 {
     std::string line;
